@@ -8,9 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
+    request: { headers: request.headers },
   });
 
   const supabase = createServerClient(
@@ -25,9 +23,7 @@ export async function updateSession(request: NextRequest) {
           cookiesToSet.forEach(({ name, value, options }) => {
             request.cookies.set(name, value);
             response = NextResponse.next({
-              request: {
-                headers: request.headers,
-              },
+              request: { headers: request.headers },
             });
             response.cookies.set(name, value, options);
           });
@@ -36,8 +32,7 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // This refreshes a user's session in case it has expired
-  await supabase.auth.getSession();
-
-  return response;
+  // Refresh session and return whether user is authenticated
+  const { data: { user } } = await supabase.auth.getUser();
+  return { response, user };
 }
