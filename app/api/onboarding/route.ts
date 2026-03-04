@@ -6,6 +6,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
+import { seedDemoData } from '@/lib/supabase/seed-demo';
 
 export async function POST(request: NextRequest) {
   try {
@@ -72,6 +73,15 @@ export async function POST(request: NextRequest) {
       await supabase.from('organizations').delete().eq('id', org.id);
       return NextResponse.json({ error: 'Failed to create profile' }, { status: 500 });
     }
+
+    // Fire-and-forget: seed demo data for new orgs.
+    // Non-fatal — failure is logged but does not block the user.
+    // NOTE: safe here because seedDemoData is demo-only and idempotent.
+    // Do NOT copy this pattern for billing, email, or critical writes —
+    // Vercel may freeze the Lambda before a detached Promise resolves.
+    seedDemoData(org.id, user.id).catch((err) =>
+      console.error('[onboarding] seedDemoData failed:', err)
+    );
 
     return NextResponse.json({ success: true, org_id: org.id });
   } catch (error) {
