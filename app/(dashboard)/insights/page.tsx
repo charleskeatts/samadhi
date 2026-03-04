@@ -16,6 +16,7 @@ export default function InsightsPage() {
   const [loading, setLoading] = useState(true);
   const [selectedFeature, setSelectedFeature] = useState<FeatureRequest | null>(null);
   const [generatingBrief, setGeneratingBrief] = useState<string | null>(null);
+  const [briefError, setBriefError] = useState<string | null>(null);
   const supabase = createClient();
 
   useEffect(() => {
@@ -39,6 +40,7 @@ export default function InsightsPage() {
 
   const handleGenerateBrief = async (featureId: string) => {
     setGeneratingBrief(featureId);
+    setBriefError(null);
     try {
       const feature = features.find((f) => f.id === featureId);
       if (!feature) return;
@@ -49,13 +51,18 @@ export default function InsightsPage() {
         body: JSON.stringify({ feature_request_id: featureId }),
       });
 
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || `Request failed (${response.status})`);
+      }
+
       const brief = await response.json();
       setSelectedFeature({
         ...feature,
         description: `${feature.description}\n\n## Roadmap Brief\n\n${brief.one_pager_md}`,
       });
     } catch (error) {
-      console.error('Error generating brief:', error);
+      setBriefError(error instanceof Error ? error.message : 'Failed to generate brief. Please try again.');
     } finally {
       setGeneratingBrief(null);
     }
@@ -108,8 +115,19 @@ export default function InsightsPage() {
                   </button>
                 ))
               ) : (
-                <div className="p-4 text-center text-slate-500 text-sm">
-                  No features yet. Feedback items will be consolidated by AI.
+                <div className="p-6 text-center">
+                  <p className="text-2xl mb-2">🧠</p>
+                  <p className="text-slate-700 font-medium text-sm mb-1">No features yet</p>
+                  <p className="text-slate-500 text-xs mb-4">
+                    AI consolidates feedback into features overnight. Add feedback first.
+                  </p>
+                  <a
+                    href="/dashboard/feedback"
+                    className="inline-block px-4 py-2 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                    style={{ backgroundColor: '#1565C0' }}
+                  >
+                    Add Feedback
+                  </a>
                 </div>
               )}
             </div>
@@ -142,13 +160,23 @@ export default function InsightsPage() {
               <button
                 onClick={() => handleGenerateBrief(selectedFeature.id)}
                 disabled={generatingBrief === selectedFeature.id}
-                className="w-full btn btn-primary bg-sky-500 hover:bg-sky-600 disabled:opacity-50 flex items-center justify-center gap-2"
+                className="w-full py-2 px-4 rounded-lg font-semibold text-white transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+                style={{ backgroundColor: '#1565C0' }}
               >
                 <Zap className="w-4 h-4" />
                 {generatingBrief === selectedFeature.id
                   ? 'Generating...'
                   : 'Generate Roadmap Brief'}
               </button>
+
+              {briefError && (
+                <div
+                  className="p-3 rounded-lg text-sm"
+                  style={{ backgroundColor: '#3B0000', color: '#FCA5A5' }}
+                >
+                  {briefError}
+                </div>
+              )}
             </div>
           ) : (
             <div className="card text-center py-12 text-slate-500">

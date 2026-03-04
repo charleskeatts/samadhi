@@ -101,8 +101,17 @@ export default async function RoadmapPage() {
                   </div>
                 ))
               ) : (
-                <div className="text-center py-8 text-slate-400 text-sm">
-                  No features
+                <div className="text-center py-8">
+                  <p className="text-slate-500 text-sm font-medium mb-1">No features</p>
+                  {column.status === 'backlog' && (
+                    <a
+                      href="/dashboard/feedback"
+                      className="text-xs font-medium hover:underline"
+                      style={{ color: '#1E88E5' }}
+                    >
+                      Add feedback →
+                    </a>
+                  )}
                 </div>
               )}
             </div>

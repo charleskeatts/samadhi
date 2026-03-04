@@ -29,6 +29,11 @@ async function getFeedback() {
     .select(
       `
       id,
+      org_id,
+      account_id,
+      rep_id,
+      crm_note_id,
+      ai_processed,
       raw_text,
       category,
       sentiment,

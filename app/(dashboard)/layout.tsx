@@ -39,8 +39,13 @@ export default function DashboardLayout({
       {/* Mobile header */}
       <div className="md:hidden bg-white border-b border-slate-200 p-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Zap className="w-6 h-6 text-sky-500" />
-          <span className="font-bold text-slate-900">Samadhi</span>
+          <Zap className="w-6 h-6" style={{ color: '#F0A500' }} />
+          <span
+            className="font-bold text-slate-900"
+            style={{ fontFamily: 'Trebuchet MS, sans-serif' }}
+          >
+            Clairio
+          </span>
         </div>
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -54,15 +59,24 @@ export default function DashboardLayout({
         {/* Sidebar */}
         <aside
           className={cn(
-            'fixed md:static inset-0 z-40 w-64 bg-slate-900 text-white transform transition-transform duration-200 ease-in-out md:transform-none',
+            'fixed md:static inset-0 z-40 w-64 text-white transform transition-transform duration-200 ease-in-out md:transform-none',
             sidebarOpen ? 'translate-x-0' : '-translate-x-full'
           )}
+          style={{ backgroundColor: '#0D1B3E' }}
         >
           <div className="h-full flex flex-col">
             {/* Logo */}
-            <div className="hidden md:flex items-center gap-2 px-6 py-8 border-b border-slate-800">
-              <Zap className="w-6 h-6 text-sky-400" />
-              <span className="font-bold text-lg">Samadhi</span>
+            <div
+              className="hidden md:flex items-center gap-2 px-6 py-8 border-b"
+              style={{ borderColor: '#1565C0' }}
+            >
+              <Zap className="w-6 h-6" style={{ color: '#F0A500' }} />
+              <span
+                className="font-bold text-lg text-white"
+                style={{ fontFamily: 'Trebuchet MS, sans-serif' }}
+              >
+                Clairio
+              </span>
             </div>
 
             {/* Navigation */}
@@ -72,12 +86,22 @@ export default function DashboardLayout({
                   key={item.href}
                   href={item.href}
                   onClick={() => setSidebarOpen(false)}
-                  className={cn(
-                    'flex items-center gap-3 px-4 py-3 rounded-lg transition-colors',
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors"
+                  style={
                     pathname === item.href
-                      ? 'bg-sky-500 text-white'
-                      : 'text-slate-300 hover:bg-slate-800'
-                  )}
+                      ? { backgroundColor: '#1565C0', color: '#FFFFFF' }
+                      : { color: '#CADCFC' }
+                  }
+                  onMouseEnter={(e) => {
+                    if (pathname !== item.href) {
+                      (e.currentTarget as HTMLElement).style.backgroundColor = '#1E3A6E';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (pathname !== item.href) {
+                      (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+                    }
+                  }}
                 >
                   <span className="text-lg">{item.icon}</span>
                   <span className="font-medium">{item.label}</span>
@@ -86,10 +110,17 @@ export default function DashboardLayout({
             </nav>
 
             {/* Sign out button */}
-            <div className="p-4 border-t border-slate-800">
+            <div className="p-4 border-t" style={{ borderColor: '#1565C0' }}>
               <button
                 onClick={handleSignOut}
-                className="w-full flex items-center gap-2 px-4 py-2 text-slate-300 hover:bg-slate-800 rounded-lg transition-colors"
+                className="w-full flex items-center gap-2 px-4 py-2 rounded-lg transition-colors"
+                style={{ color: '#CADCFC' }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLElement).style.backgroundColor = '#1E3A6E';
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+                }}
               >
                 <LogOut className="w-4 h-4" />
                 <span>Sign out</span>

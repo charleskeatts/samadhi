@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Samadhi — Sales-to-Product Intelligence',
+  title: 'Clairio — Revenue-Weighted Product Intelligence',
   description: 'Capture customer feedback from sales calls, attach revenue weight, and surface prioritized product intelligence.',
 };
 

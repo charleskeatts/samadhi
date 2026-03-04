@@ -76,7 +76,7 @@ async function getStats() {
   // Get top features
   const { data: topFeatures } = await supabase
     .from('feature_requests')
-    .select('id, title, total_revenue_weight, account_count')
+    .select('id, org_id, title, description, total_revenue_weight, account_count, feedback_ids, roadmap_status, created_at, updated_at')
     .eq('org_id', orgId)
     .order('total_revenue_weight', { ascending: false })
     .limit(3);
@@ -150,7 +150,20 @@ export default async function DashboardPage() {
                 </div>
               ))
             ) : (
-              <p className="text-slate-500 text-center py-4">No feedback yet</p>
+              <div className="text-center py-8">
+                <p className="text-2xl mb-2">💬</p>
+                <p className="text-slate-700 font-medium text-sm mb-1">No feedback yet</p>
+                <p className="text-slate-500 text-xs mb-4">
+                  Submit your first piece of customer feedback to get started.
+                </p>
+                <a
+                  href="/dashboard/feedback"
+                  className="inline-block px-4 py-2 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                  style={{ backgroundColor: '#1565C0' }}
+                >
+                  Add Feedback
+                </a>
+              </div>
             )}
           </div>
         </div>
@@ -179,7 +192,20 @@ export default async function DashboardPage() {
                 </div>
               ))
             ) : (
-              <p className="text-slate-500 text-center py-4">No features yet</p>
+              <div className="text-center py-8">
+                <p className="text-2xl mb-2">🧠</p>
+                <p className="text-slate-700 font-medium text-sm mb-1">No features yet</p>
+                <p className="text-slate-500 text-xs mb-4">
+                  Features are automatically grouped from feedback by AI. Add feedback to get started.
+                </p>
+                <a
+                  href="/dashboard/feedback"
+                  className="inline-block px-4 py-2 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                  style={{ backgroundColor: '#1565C0' }}
+                >
+                  Add Feedback
+                </a>
+              </div>
             )}
           </div>
         </div>
