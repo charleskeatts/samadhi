@@ -11,12 +11,6 @@ const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-interface FeedbackItem {
-  id: string;
-  raw_text: string;
-  account_name: string;
-  arr: number;
-}
 
 /**
  * Fetch unprocessed feature_request feedback and consolidate into feature requests
@@ -30,6 +24,7 @@ export async function consolidateFeedback(): Promise<ConsolidateResult> {
     .select(
       `
       id,
+      org_id,
       raw_text,
       urgency_score,
       revenue_weight,
@@ -114,8 +109,9 @@ Respond with ONLY valid JSON (no markdown) in this format:
         const item = feedbackItems.find((f: any) => f.id === id);
         if (item) {
           totalRevenue += item.revenue_weight;
-          if (item.accounts?.name) {
-            accountsSet.add(item.accounts.name);
+          const acct = Array.isArray(item.accounts) ? item.accounts[0] : item.accounts;
+          if (acct?.name) {
+            accountsSet.add(acct.name);
           }
         }
       }

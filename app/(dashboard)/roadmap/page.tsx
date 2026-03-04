@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/server';
 import { RoadmapStatus } from '@/types';
 import { formatARR } from '@/lib/utils';
 
-async function getFeatures() {
+async function getFeatures(): Promise<Partial<Record<RoadmapStatus, any[]>>> {
   const supabase = await createClient();
 
   const {

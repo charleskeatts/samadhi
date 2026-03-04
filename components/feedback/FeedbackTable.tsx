@@ -8,7 +8,6 @@
 import { useState } from 'react';
 import { FeedbackWithAccount, FeedbackStatus } from '@/types';
 import { formatARR, timeAgo, getCategoryColor, getSentimentColor, capitalize } from '@/lib/utils';
-import { ChevronDown } from 'lucide-react';
 
 interface FeedbackTableProps {
   initialData: FeedbackWithAccount[];

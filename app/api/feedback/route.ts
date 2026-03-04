@@ -17,12 +17,12 @@ const CreateFeedbackSchema = z.object({
   crm_note_id: z.string().optional(),
 });
 
-type CreateFeedbackInput = z.infer<typeof CreateFeedbackSchema>;
+// type CreateFeedbackInput = z.infer<typeof CreateFeedbackSchema>;
 
 /**
  * GET: Fetch all feedback for the user's organization
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const supabase = await createClient();
 
@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedData = CreateFeedbackSchema.parse(body);
 
-    const { raw_text, account_name, arr, crm_note_id } = validatedData;
+    const { raw_text, account_name, arr, crm_note_id: _crm_note_id } = validatedData;
 
     // Find or create account
     const { data: existingAccount } = await supabase
