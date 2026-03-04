@@ -105,6 +105,11 @@ components/
 - **No N+1 queries.** Use SQL joins, not sequential fetches.
 - **Vercel cron:** Defined in `vercel.json`. Only runs in production — test locally with direct POST.
 - **Claude model:** Use `claude-opus-4-6` (already in codebase). Do not downgrade without checking impact on output quality.
+- **Git paths with parentheses:** Quote `app/(auth)/` and `app/(dashboard)/` in all git commands — zsh glob-expands unquoted parens: `git add "app/(auth)/login/page.tsx"`
+- **Port 3000 conflict:** Before `preview_start`, check for stale servers: `lsof -i :3000 -t | xargs kill`
+- **Post-response Supabase writes:** The SSR cookie client closes when the HTTP response is sent. For fire-and-forget writes after the response (e.g. seeding), use `createClient` from `@supabase/supabase-js` with `SUPABASE_SERVICE_ROLE_KEY` directly — see `lib/supabase/seed-demo.ts`
+- **Build SIGTERM warning:** `Compiler edge-server unexpectedly exited with SIGTERM` is non-blocking on Mac — build still passes, safe to ignore
+- **Demo seed theme tags:** `lib/supabase/seed-demo.ts` uses `crm_note_id` as a lookup key (`demo:salesforce`, `demo:slack`, etc.) to map feedback rows to feature_requests without relying on insert order
 
 ---
 
@@ -157,6 +162,10 @@ Always match this design system when building new slides or UI components.
 - 3 Claude agents: classify, consolidate, roadmap-brief
 - Supabase schema with multi-tenant RLS
 - Pitch deck (24 slides), financial model, one-pager, partner emails
+- Phase B: full Clairio rebrand (login, signup, dashboard, empty states, error handling)
+- Phase C: user testing setup — auto-seed demo data on onboarding (`lib/supabase/seed-demo.ts`), `docs/VERCEL_DEPLOY.md`
+
+**Next manual step:** Charles follows `docs/VERCEL_DEPLOY.md` to deploy to Vercel (add 5 env vars in dashboard, update Supabase redirect URLs)
 
 **MVP next priorities:**
 1. Feedback Capture Agent polish (highest demo value)
