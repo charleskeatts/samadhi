@@ -68,6 +68,8 @@ export interface FeatureRequest {
   account_count: number;
   feedback_ids: string[];
   roadmap_status: RoadmapStatus;
+  category: string;
+  blocker_score: number;
   created_at: string;
   updated_at: string;
 }
