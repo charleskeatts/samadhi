@@ -76,7 +76,7 @@ async function getStats() {
   // Get top features
   const { data: topFeatures } = await supabase
     .from('feature_requests')
-    .select('id, org_id, title, description, total_revenue_weight, account_count, feedback_ids, roadmap_status, created_at, updated_at')
+    .select('id, org_id, title, description, total_revenue_weight, account_count, feedback_ids, roadmap_status, category, blocker_score, created_at, updated_at')
     .eq('org_id', orgId)
     .order('total_revenue_weight', { ascending: false })
     .limit(3);
