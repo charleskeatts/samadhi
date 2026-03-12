@@ -108,6 +108,8 @@ export async function seedDemoData(orgId: string, repId: string): Promise<void> 
       account_count: 3,
       feedback_ids: byTheme['demo:salesforce'] ?? [],
       roadmap_status: 'backlog',
+      category: 'Integration',
+      blocker_score: 5,
     },
     {
       org_id: orgId,
@@ -117,6 +119,8 @@ export async function seedDemoData(orgId: string, repId: string): Promise<void> 
       account_count: 2,
       feedback_ids: byTheme['demo:bulk_export'] ?? [],
       roadmap_status: 'planned',
+      category: 'Analytics',
+      blocker_score: 4,
     },
     {
       org_id: orgId,
@@ -126,6 +130,8 @@ export async function seedDemoData(orgId: string, repId: string): Promise<void> 
       account_count: 3,
       feedback_ids: byTheme['demo:slack'] ?? [],
       roadmap_status: 'in_progress',
+      category: 'Integration',
+      blocker_score: 3,
     },
     {
       org_id: orgId,
@@ -135,6 +141,8 @@ export async function seedDemoData(orgId: string, repId: string): Promise<void> 
       account_count: 1,
       feedback_ids: byTheme['demo:reporting'] ?? [],
       roadmap_status: 'shipped',
+      category: 'Analytics',
+      blocker_score: 2,
     },
   ];
 
