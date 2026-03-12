@@ -25,6 +25,7 @@ export default function DashboardLayout({
     { href: '/dashboard', label: 'Overview', icon: '📊' },
     { href: '/dashboard/feedback', label: 'Feedback', icon: '💬' },
     { href: '/dashboard/insights', label: 'Insights', icon: '🧠' },
+    { href: '/dashboard/backlog', label: 'Backlog', icon: '🎯' },
     { href: '/dashboard/roadmap', label: 'Roadmap', icon: '🗺️' },
     { href: '/dashboard/settings', label: 'Settings', icon: '⚙️' },
   ];
