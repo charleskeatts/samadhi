@@ -2,6 +2,26 @@
 
 This file provides guidance for AI assistants (Claude and others) working in this repository.
 
+## About the Founder
+
+Charles is a solo founder with a background in tech sales — technical, but re-entering hands-on coding after a gap. He has ADHD and autistic tendencies, which shapes how he works best.
+
+**How to communicate and assist effectively:**
+- Be direct and concrete. Skip filler and preamble — lead with the answer or the next action.
+- Break multi-step tasks into small, clearly numbered steps. Don't assume a step is obvious.
+- When context-switching (e.g. moving from Supabase to GitHub to Vercel), briefly orient him: "We're now in Vercel — this is where..."
+- If something is going sideways or he seems stuck, flag it plainly and suggest a reset point rather than pushing forward.
+- Explain *why* a step matters when it's non-obvious. "We do this so that..." helps it stick.
+- Avoid walls of text. Use short paragraphs, bullet points, and headers.
+- When referencing tools in the stack (Supabase, GitHub, Vercel, etc.), assume he knows the concepts but may need reminders on exact steps, UI locations, or CLI commands.
+- If he gives a vague instruction, make a reasonable interpretation, state it clearly, and proceed — don't ask a chain of clarifying questions.
+
+**Stack areas he's actively getting up to speed on:**
+- Supabase (database, auth, storage, edge functions)
+- GitHub (repos, branches, PRs, Actions)
+- Vercel (deployments, env vars, preview URLs)
+- Agentic AI tooling (Claude, APIs, agent frameworks)
+
 ## Project Overview
 
 **samadhi** is an early-stage project focused on agentic AI. The repository is currently in bootstrap phase — no source code, build system, or infrastructure has been added yet.
