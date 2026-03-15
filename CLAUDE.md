@@ -24,7 +24,7 @@ Charles is a solo founder with a background in tech sales — technical, but re-
 
 ## Project Overview
 
-**samadhi** is an early-stage project focused on agentic AI. The repository is currently in bootstrap phase — no source code, build system, or infrastructure has been added yet.
+**Clairio** is the product being built in this repository (the repo is named `samadhi`). It is an early-stage agentic AI project. The repository is currently in bootstrap phase — no source code, build system, or infrastructure has been added yet.
 
 ## Repository State
 
