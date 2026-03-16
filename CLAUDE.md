@@ -199,6 +199,23 @@ Year 1 is in the red — expected. Consulting revenue ($250–350/hr GPU/AI advi
 
 ---
 
+## Emerging Technology Watch
+
+### WebMCP — Chrome 146 (v3 Consideration)
+
+**What it is:** Chrome 146 introduces WebMCP, which lets AI agents call functions a webpage exposes directly — not screenscraping, but invoking the page's actual data methods through the browser.
+
+**Why it matters for Clairio:**
+
+- **Lower-friction onboarding path:** Instead of OAuth setup, a Clairio agent could connect through the browser — "open Salesforce in Chrome, Clairio reads it." Zero OAuth config from the user.
+- **Real-time Signal Capture (v2 agent):** The planned feature where Clairio prompts sales reps when they update an opportunity could be native to Chrome via WebMCP — no Salesforce Flow, no webhook, no Slack bot. The agent intercepts the moment of data entry directly in the browser.
+
+**Current status:** WebMCP just shipped. Salesforce has not implemented it yet.
+
+**Decision: v3 only.** Current sprint is getting 3 design partners live on the OAuth connector. Revisit WebMCP in ~6 months when Salesforce adoption is clearer. Watch for Salesforce announcements on WebMCP support.
+
+---
+
 ## IP Notes
 
 - All materials auto-copyrighted at creation
