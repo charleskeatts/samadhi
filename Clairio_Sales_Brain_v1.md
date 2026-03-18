@@ -254,9 +254,39 @@ Everything in Clairio's extraction, weighting, and display logic should be optim
 
 ---
 
+## SESSION 1 SUMMARY
+
+### 5 core patterns captured from IBM experience
+1. **The Feature Gap Negotiation** — how competitors are used as leverage in the three-way trade-off between price, features, and build speed
+2. **The Silent Feature Signal** — why the most important signals never get recorded (rep is in price negotiation mode, not product intelligence mode)
+3. **The Broken Signal Chain** — the Slack/email follow-up loop that kills intelligence before it reaches product
+4. **The Three-Layer Signal Problem** — conversation, Salesforce note, follow-up, and the hidden price signal that means "product is overbuilt"
+5. **The AI Speed Imperative** — why Clairio exists now and not five years ago; speed of signal → decision → build → ship is now a competitive weapon
+
+### Three critical extractions for Claude
+- **Signal extraction rules** — high/medium/low confidence language patterns, pricing signals tagged separately
+- **ARR weighting multipliers** — blocker flags (×1.5), compliance (×1.3), competitor mentions (×1.2), timeline pressure (×1.2), hedged requests (×0.6)
+- **The Magic Moment definition** — what Clairio must create for the demo to land: specific, counter-intuitive, surprising in magnitude, obvious in retrospect
+
+### How to use this document with Claude Code
+Drop this file into your project root and paste at the start of any Claude Code session building signal extraction, ARR weighting, or Deal Blocker Radar features:
+
+```
+Read Clairio_Sales_Brain_v1.md before building anything related to signal extraction or ARR weighting.
+```
+
+### What to capture next
+- Deal stories from specific IBM accounts (NVIDIA, Airbnb, BNP Paribas, Elastic — each buyer type is different)
+- What made NVIDIA different from Airbnb as a buyer
+- How compliance-driven buyers (financial services) differ from product-driven buyers (tech companies)
+- The anatomy of a deal that died on a feature gap vs. one that closed despite a feature gap
+- What reps actually say vs. what they write in Salesforce (the translation layer)
+
+---
+
 ## DOCUMENT STATUS
-- Version: 1.0
+- Version: 1.1
 - Date: March 2026
 - Source: Charles Keatts, Founder & CEO, Samadhi Consulting LLC
-- Next: Continue adding patterns in subsequent sessions
+- Next: Continue adding patterns in subsequent sessions — deal stories, account archetypes, buyer psychology by segment
 - Usage: Upload as context document to Claude Code before building signal extraction pipeline
