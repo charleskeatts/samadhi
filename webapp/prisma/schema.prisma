@@ -1,0 +1,128 @@
+// This is your Prisma schema file.
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Billing & Accounts ────────────────────────────────────────────────────────
+
+model Account {
+  id                   String    @id @default(cuid())
+  name                 String
+  stripeCustomerId     String?   @unique
+  stripeSubscriptionId String?   @unique
+  subscriptionStatus   String    @default("trialing") // trialing | active | past_due | canceled
+  trialEndsAt          DateTime?
+  createdAt            DateTime  @default(now())
+
+  users     User[]
+  contacts  Contact[]
+  companies Company[]
+  deals     Deal[]
+  tasks     Task[]
+}
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+
+model User {
+  id           String    @id @default(cuid())
+  accountId    String
+  account      Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  name         String
+  email        String    @unique
+  passwordHash String
+  role         String    @default("member") // owner | member
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  sessions     Session[]
+}
+
+// NextAuth required tables
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expires      DateTime
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ── CRM Entities ──────────────────────────────────────────────────────────────
+
+model Contact {
+  id        String   @id @default(cuid())
+  accountId String
+  account   Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  name      String
+  email     String?
+  phone     String?
+  companyId String?
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  tags      String   @default("") // comma-separated
+  notes     String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deals     Deal[]
+  tasks     Task[]
+}
+
+model Company {
+  id        String    @id @default(cuid())
+  accountId String
+  account   Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  name      String
+  website   String?
+  industry  String?
+  notes     String    @default("")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  contacts  Contact[]
+  deals     Deal[]
+}
+
+model Deal {
+  id        String    @id @default(cuid())
+  accountId String
+  account   Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  title     String
+  contactId String
+  contact   Contact   @relation(fields: [contactId], references: [id], onDelete: Restrict)
+  companyId String?
+  company   Company?  @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  amount    Float     @default(0)
+  stage     String    @default("Lead") // Lead|Qualified|Proposal|Negotiation|Won|Lost
+  closeDate DateTime?
+  notes     String    @default("")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  tasks     Task[]
+}
+
+model Task {
+  id          String    @id @default(cuid())
+  accountId   String
+  account     Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  title       String
+  description String    @default("")
+  dueDate     DateTime?
+  status      String    @default("Open") // Open | Completed
+  contactId   String?
+  contact     Contact?  @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  dealId      String?
+  deal        Deal?     @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
