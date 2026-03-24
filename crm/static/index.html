@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clairio CRM</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            surface: '#1a1d2e',
+            border: '#2d3056',
+            muted: '#8892b0',
+          }
+        }
+      }
+    }
+  </script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    body { background: #0f1117; color: #e2e8f0; font-family: 'Inter', system-ui, sans-serif; }
+    ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: #0f1117; }
+    ::-webkit-scrollbar-thumb { background: #2d3056; border-radius: 3px; }
+    .modal-overlay { backdrop-filter: blur(4px); }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useCallback } = React;
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
+const fmt = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
+
+const STAGES = ['Prospecting', 'Discovery', 'Proposal', 'Negotiation', 'Closed Won', 'Closed Lost'];
+const STAGE_COLORS = {
+  Prospecting: 'bg-slate-700 text-slate-200',
+  Discovery: 'bg-blue-900 text-blue-200',
+  Proposal: 'bg-indigo-900 text-indigo-200',
+  Negotiation: 'bg-amber-900 text-amber-200',
+  'Closed Won': 'bg-green-900 text-green-200',
+  'Closed Lost': 'bg-red-950 text-red-300',
+};
+const SEV_COLORS = {
+  CRITICAL: { bg: 'bg-red-950', text: 'text-red-400', dot: 'bg-red-500', border: 'border-red-800' },
+  HIGH:     { bg: 'bg-orange-950', text: 'text-orange-400', dot: 'bg-orange-500', border: 'border-orange-800' },
+  MEDIUM:   { bg: 'bg-yellow-950', text: 'text-yellow-400', dot: 'bg-yellow-500', border: 'border-yellow-800' },
+};
+const TYPE_COLORS = {
+  COMPLIANCE: 'bg-purple-900 text-purple-200',
+  COMPETITOR: 'bg-blue-900 text-blue-200',
+  FEATURE:    'bg-indigo-900 text-indigo-200',
+  PRICING:    'bg-teal-900 text-teal-200',
+};
+const SIGNAL_TYPES = ['FEATURE', 'COMPETITOR', 'PRICING', 'COMPLIANCE'];
+
+async function api(path, options = {}) {
+  const res = await fetch('/api' + path, {
+    headers: { 'Content-Type': 'application/json' },
+    ...options,
+  });
+  if (!res.ok) throw new Error(await res.text());
+  if (res.status === 204) return null;
+  return res.json();
+}
+
+// ── Icons (inline SVG) ─────────────────────────────────────────────────────────
+
+const Icon = ({ name, className = 'w-4 h-4' }) => {
+  const paths = {
+    radar:  <><circle cx="12" cy="12" r="2"/><path d="M12 2a10 10 0 0 1 10 10"/><path d="M12 6a6 6 0 0 1 6 6"/><path d="M12 10a2 2 0 0 1 2 2"/><line x1="2" y1="12" x2="12" y2="12"/></>,
+    deals:  <><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></>,
+    plus:   <><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>,
+    arrow:  <><polyline points="15 18 9 12 15 6"/></>,
+    trash:  <><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></>,
+    edit:   <><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></>,
+    signal: <><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></>,
+    x:      <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>,
+    chevron:<><polyline points="6 9 12 15 18 9"/></>,
+  };
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+      className={className}>
+      {paths[name]}
+    </svg>
+  );
+};
+
+// ── Modal ──────────────────────────────────────────────────────────────────────
+
+function Modal({ title, onClose, children }) {
+  return (
+    <div className="modal-overlay fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+      <div className="bg-surface border border-border rounded-xl w-full max-w-lg shadow-2xl">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+          <h2 className="font-semibold text-lg">{title}</h2>
+          <button onClick={onClose} className="text-muted hover:text-white transition-colors">
+            <Icon name="x" />
+          </button>
+        </div>
+        <div className="px-6 py-5">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+// ── Deal Form ──────────────────────────────────────────────────────────────────
+
+function DealForm({ initial = {}, onSave, onCancel }) {
+  const [form, setForm] = useState({
+    account_name: '', contact_name: '', rep_name: '',
+    arr_amount: '', stage: 'Discovery', close_date: '', notes: '',
+    ...initial,
+  });
+  const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
+
+  const submit = async (e) => {
+    e.preventDefault();
+    await onSave({ ...form, arr_amount: parseFloat(form.arr_amount) || 0 });
+  };
+
+  const inputCls = "w-full bg-black/30 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 transition-colors";
+  const labelCls = "block text-xs text-muted mb-1";
+
+  return (
+    <form onSubmit={submit} className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className={labelCls}>Account *</label>
+          <input required className={inputCls} value={form.account_name} onChange={set('account_name')} placeholder="Acme Corp" />
+        </div>
+        <div>
+          <label className={labelCls}>ARR ($) *</label>
+          <input required type="number" className={inputCls} value={form.arr_amount} onChange={set('arr_amount')} placeholder="500000" />
+        </div>
+        <div>
+          <label className={labelCls}>Contact</label>
+          <input className={inputCls} value={form.contact_name} onChange={set('contact_name')} placeholder="Jane Smith" />
+        </div>
+        <div>
+          <label className={labelCls}>Rep</label>
+          <input className={inputCls} value={form.rep_name} onChange={set('rep_name')} placeholder="Your name" />
+        </div>
+        <div>
+          <label className={labelCls}>Stage</label>
+          <select className={inputCls} value={form.stage} onChange={set('stage')}>
+            {STAGES.map(s => <option key={s}>{s}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className={labelCls}>Close Date</label>
+          <input type="date" className={inputCls} value={form.close_date} onChange={set('close_date')} />
+        </div>
+      </div>
+      <div>
+        <label className={labelCls}>Notes</label>
+        <textarea className={inputCls + " h-20 resize-none"} value={form.notes} onChange={set('notes')} placeholder="Key context from last call..." />
+      </div>
+      <div className="flex justify-end gap-3 pt-2">
+        <button type="button" onClick={onCancel} className="px-4 py-2 text-sm text-muted hover:text-white transition-colors">Cancel</button>
+        <button type="submit" className="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-500 rounded-lg font-medium transition-colors">Save Deal</button>
+      </div>
+    </form>
+  );
+}
+
+// ── Signal Form ────────────────────────────────────────────────────────────────
+
+function SignalForm({ onSave, onCancel }) {
+  const [form, setForm] = useState({
+    signal_type: 'FEATURE', feature_name: '', competitor_name: '',
+    description: '', confidence: 'HIGH', is_deal_blocker: false, timeline_pressure: false,
+  });
+  const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
+  const toggle = (k) => () => setForm(f => ({ ...f, [k]: !f[k] }));
+
+  const submit = (e) => { e.preventDefault(); onSave(form); };
+  const inputCls = "w-full bg-black/30 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 transition-colors";
+  const labelCls = "block text-xs text-muted mb-1";
+
+  return (
+    <form onSubmit={submit} className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className={labelCls}>Signal Type *</label>
+          <select className={inputCls} value={form.signal_type} onChange={set('signal_type')}>
+            {SIGNAL_TYPES.map(t => <option key={t}>{t}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className={labelCls}>Confidence</label>
+          <select className={inputCls} value={form.confidence} onChange={set('confidence')}>
+            {['HIGH', 'MEDIUM', 'LOW'].map(c => <option key={c}>{c}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className={labelCls}>Feature Name</label>
+          <input className={inputCls} value={form.feature_name} onChange={set('feature_name')} placeholder="SSO / SAML" />
+        </div>
+        <div>
+          <label className={labelCls}>Competitor Mentioned</label>
+          <input className={inputCls} value={form.competitor_name} onChange={set('competitor_name')} placeholder="Gong, Chorus…" />
+        </div>
+      </div>
+      <div>
+        <label className={labelCls}>Description *</label>
+        <textarea required className={inputCls + " h-20 resize-none"} value={form.description} onChange={set('description')} placeholder="What did the customer say?" />
+      </div>
+      <div className="flex gap-6">
+        <label className="flex items-center gap-2 text-sm cursor-pointer">
+          <input type="checkbox" checked={form.is_deal_blocker} onChange={toggle('is_deal_blocker')} className="w-4 h-4 accent-indigo-500" />
+          <span>Deal Blocker <span className="text-muted">(×1.5)</span></span>
+        </label>
+        <label className="flex items-center gap-2 text-sm cursor-pointer">
+          <input type="checkbox" checked={form.timeline_pressure} onChange={toggle('timeline_pressure')} className="w-4 h-4 accent-indigo-500" />
+          <span>Timeline Pressure <span className="text-muted">(×1.2)</span></span>
+        </label>
+      </div>
+      <div className="flex justify-end gap-3 pt-2">
+        <button type="button" onClick={onCancel} className="px-4 py-2 text-sm text-muted hover:text-white transition-colors">Cancel</button>
+        <button type="submit" className="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-500 rounded-lg font-medium transition-colors">Add Signal</button>
+      </div>
+    </form>
+  );
+}
+
+// ── Radar View ─────────────────────────────────────────────────────────────────
+
+function RadarView({ radar, onSelectDeal, totalArr }) {
+  const [expanded, setExpanded] = useState(null);
+
+  if (!radar.length) return (
+    <div className="flex flex-col items-center justify-center h-64 text-muted">
+      <Icon name="radar" className="w-12 h-12 mb-4 opacity-30" />
+      <p>No feature signals yet. Add signals to deals to populate the radar.</p>
+    </div>
+  );
+
+  const criticalArr = radar.filter(r => r.severity === 'CRITICAL').reduce((s, r) => s + r.total_weighted_arr, 0);
+  const highArr     = radar.filter(r => r.severity === 'HIGH').reduce((s, r) => s + r.total_weighted_arr, 0);
+
+  return (
+    <div className="space-y-6">
+      {/* Summary cards */}
+      <div className="grid grid-cols-3 gap-4">
+        {[
+          { label: 'Total ARR at Risk', value: fmt(radar.reduce((s, r) => s + r.total_weighted_arr, 0)), sub: `${radar.length} features flagged`, color: 'text-white' },
+          { label: 'Critical Blockers', value: fmt(criticalArr), sub: `${radar.filter(r => r.severity === 'CRITICAL').length} features`, color: 'text-red-400' },
+          { label: 'High Priority',     value: fmt(highArr),     sub: `${radar.filter(r => r.severity === 'HIGH').length} features`,     color: 'text-orange-400' },
+        ].map(c => (
+          <div key={c.label} className="bg-surface border border-border rounded-xl p-5">
+            <p className="text-xs text-muted mb-1">{c.label}</p>
+            <p className={`text-2xl font-bold ${c.color}`}>{c.value}</p>
+            <p className="text-xs text-muted mt-1">{c.sub}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Radar table */}
+      <div className="bg-surface border border-border rounded-xl overflow-hidden">
+        <div className="px-6 py-4 border-b border-border">
+          <h2 className="font-semibold">Deal Blocker Radar</h2>
+          <p className="text-xs text-muted mt-0.5">Weighted ARR at risk per feature — sorted by revenue impact</p>
+        </div>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-border text-muted text-xs">
+              <th className="text-left px-6 py-3">Severity</th>
+              <th className="text-left px-6 py-3">Feature / Gap</th>
+              <th className="text-left px-6 py-3">Type</th>
+              <th className="text-right px-6 py-3">Weighted ARR</th>
+              <th className="text-right px-6 py-3">Deals</th>
+              <th className="px-6 py-3"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {radar.map((row) => {
+              const sev = SEV_COLORS[row.severity];
+              const isOpen = expanded === row.feature_name;
+              return (
+                <React.Fragment key={row.feature_name}>
+                  <tr
+                    className="border-b border-border/50 hover:bg-white/5 cursor-pointer transition-colors"
+                    onClick={() => setExpanded(isOpen ? null : row.feature_name)}
+                  >
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ${sev.bg} ${sev.text} border ${sev.border}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${sev.dot}`}></span>
+                        {row.severity}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 font-medium">{row.feature_name}</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${TYPE_COLORS[row.signal_type] || 'bg-slate-800 text-slate-300'}`}>
+                        {row.signal_type}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-right font-semibold tabular-nums">{fmt(row.total_weighted_arr)}</td>
+                    <td className="px-6 py-4 text-right text-muted">{row.deal_count}</td>
+                    <td className="px-6 py-4 text-muted">
+                      <Icon name="chevron" className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                    </td>
+                  </tr>
+                  {isOpen && (
+                    <tr className="bg-black/20">
+                      <td colSpan="6" className="px-8 py-4">
+                        <p className="text-xs text-muted mb-2 uppercase tracking-wider">Affected Accounts</p>
+                        <div className="flex flex-wrap gap-2">
+                          {row.deals.map(d => (
+                            <button
+                              key={d.id}
+                              onClick={(e) => { e.stopPropagation(); onSelectDeal(d.id); }}
+                              className="flex items-center gap-2 bg-surface border border-border rounded-lg px-3 py-2 text-xs hover:border-indigo-500 transition-colors"
+                            >
+                              <span className="font-medium">{d.account_name}</span>
+                              <span className="text-muted">{fmt(d.arr_amount)}</span>
+                              <span className={`px-1.5 py-0.5 rounded text-xs ${STAGE_COLORS[d.stage] || 'bg-slate-700 text-slate-200'}`}>{d.stage}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ── Deal Card ──────────────────────────────────────────────────────────────────
+
+function DealCard({ deal, onOpen, onEdit, onDelete }) {
+  return (
+    <div className="bg-surface border border-border rounded-xl p-5 hover:border-indigo-500/50 transition-colors group">
+      <div className="flex items-start justify-between gap-2 mb-3">
+        <div>
+          <button onClick={() => onOpen(deal.id)} className="font-semibold hover:text-indigo-400 transition-colors text-left">
+            {deal.account_name}
+          </button>
+          {deal.contact_name && <p className="text-xs text-muted mt-0.5">{deal.contact_name}</p>}
+        </div>
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button onClick={() => onEdit(deal)} className="p-1.5 rounded hover:bg-white/10 text-muted hover:text-white transition-colors">
+            <Icon name="edit" className="w-3.5 h-3.5" />
+          </button>
+          <button onClick={() => onDelete(deal.id)} className="p-1.5 rounded hover:bg-red-900/50 text-muted hover:text-red-400 transition-colors">
+            <Icon name="trash" className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-xl font-bold tabular-nums">{fmt(deal.arr_amount)}</span>
+        <span className={`px-2 py-0.5 rounded text-xs font-medium ${STAGE_COLORS[deal.stage] || 'bg-slate-700 text-slate-200'}`}>
+          {deal.stage}
+        </span>
+      </div>
+      <div className="flex items-center justify-between text-xs text-muted">
+        <span>{deal.rep_name || '—'}</span>
+        <div className="flex items-center gap-3">
+          {deal.close_date && <span>{deal.close_date}</span>}
+          <button onClick={() => onOpen(deal.id)} className="flex items-center gap-1 hover:text-indigo-400 transition-colors">
+            <Icon name="signal" className="w-3 h-3" />
+            {deal.signal_count} signal{deal.signal_count !== 1 ? 's' : ''}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Deals View ─────────────────────────────────────────────────────────────────
+
+function DealsView({ deals, onOpen, onAdd, onEdit, onDelete }) {
+  const totalArr = deals.filter(d => !d.stage.startsWith('Closed')).reduce((s, d) => s + d.arr_amount, 0);
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-3 gap-4">
+        {[
+          { label: 'Pipeline ARR', value: fmt(totalArr), sub: `${deals.filter(d => !d.stage.startsWith('Closed')).length} active deals` },
+          { label: 'Closed Won', value: fmt(deals.filter(d => d.stage === 'Closed Won').reduce((s, d) => s + d.arr_amount, 0)), sub: `${deals.filter(d => d.stage === 'Closed Won').length} deals`, color: 'text-green-400' },
+          { label: 'Total Deals', value: deals.length, sub: 'all time' },
+        ].map(c => (
+          <div key={c.label} className="bg-surface border border-border rounded-xl p-5">
+            <p className="text-xs text-muted mb-1">{c.label}</p>
+            <p className={`text-2xl font-bold ${c.color || 'text-white'}`}>{c.value}</p>
+            <p className="text-xs text-muted mt-1">{c.sub}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex items-center justify-between">
+        <h2 className="font-semibold">All Deals</h2>
+        <button onClick={onAdd} className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-medium transition-colors">
+          <Icon name="plus" className="w-3.5 h-3.5" /> New Deal
+        </button>
+      </div>
+
+      {deals.length === 0 ? (
+        <div className="text-center py-16 text-muted">
+          <Icon name="deals" className="w-12 h-12 mx-auto mb-4 opacity-30" />
+          <p>No deals yet. Add your first deal to get started.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {deals.map(d => (
+            <DealCard key={d.id} deal={d} onOpen={onOpen} onEdit={onEdit} onDelete={onDelete} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Deal Detail View ───────────────────────────────────────────────────────────
+
+function DealDetailView({ deal, signals, onBack, onAddSignal, onDeleteSignal, onEditDeal }) {
+  if (!deal) return null;
+  const sev = SEV_COLORS;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-3">
+        <button onClick={onBack} className="flex items-center gap-1.5 text-muted hover:text-white text-sm transition-colors">
+          <Icon name="arrow" className="w-4 h-4" /> Back
+        </button>
+      </div>
+
+      {/* Deal header */}
+      <div className="bg-surface border border-border rounded-xl p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold">{deal.account_name}</h2>
+            {deal.contact_name && <p className="text-muted mt-1">{deal.contact_name}</p>}
+          </div>
+          <div className="flex items-center gap-3">
+            <span className={`px-3 py-1 rounded-full text-sm font-medium ${STAGE_COLORS[deal.stage] || 'bg-slate-700 text-slate-200'}`}>{deal.stage}</span>
+            <button onClick={() => onEditDeal(deal)} className="p-2 rounded-lg hover:bg-white/10 text-muted hover:text-white transition-colors">
+              <Icon name="edit" className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-6 pt-6 border-t border-border">
+          {[
+            { label: 'ARR', value: fmt(deal.arr_amount) },
+            { label: 'Rep', value: deal.rep_name || '—' },
+            { label: 'Close Date', value: deal.close_date || '—' },
+            { label: 'Signals', value: signals.length },
+          ].map(f => (
+            <div key={f.label}>
+              <p className="text-xs text-muted mb-1">{f.label}</p>
+              <p className="font-semibold">{f.value}</p>
+            </div>
+          ))}
+        </div>
+        {deal.notes && (
+          <div className="mt-4 pt-4 border-t border-border">
+            <p className="text-xs text-muted mb-1">Notes</p>
+            <p className="text-sm text-slate-300">{deal.notes}</p>
+          </div>
+        )}
+      </div>
+
+      {/* Signals */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold">Signals</h3>
+          <button onClick={onAddSignal} className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-medium transition-colors">
+            <Icon name="plus" className="w-3.5 h-3.5" /> Add Signal
+          </button>
+        </div>
+
+        {signals.length === 0 ? (
+          <div className="bg-surface border border-border rounded-xl p-8 text-center text-muted">
+            <Icon name="signal" className="w-10 h-10 mx-auto mb-3 opacity-30" />
+            <p className="text-sm">No signals yet. Add what the customer said about features, competitors, or pricing.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {signals.map(sig => (
+              <div key={sig.id} className="bg-surface border border-border rounded-xl p-4 group">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-3 flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${TYPE_COLORS[sig.signal_type] || 'bg-slate-800 text-slate-300'}`}>
+                        {sig.signal_type}
+                      </span>
+                      <span className={`text-xs ${sig.confidence === 'HIGH' ? 'text-green-400' : sig.confidence === 'MEDIUM' ? 'text-yellow-400' : 'text-red-400'}`}>
+                        {sig.confidence}
+                      </span>
+                      {sig.is_deal_blocker && <span className="px-2 py-0.5 bg-red-950 text-red-400 border border-red-800 rounded text-xs">BLOCKER</span>}
+                      {sig.timeline_pressure && <span className="px-2 py-0.5 bg-amber-950 text-amber-400 border border-amber-800 rounded text-xs">TIMELINE</span>}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => onDeleteSignal(sig.id)}
+                    className="opacity-0 group-hover:opacity-100 p-1.5 rounded hover:bg-red-900/50 text-muted hover:text-red-400 transition-all flex-shrink-0"
+                  >
+                    <Icon name="trash" className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                {sig.feature_name && (
+                  <p className="font-medium mt-2">{sig.feature_name}{sig.competitor_name && <span className="text-muted text-sm font-normal"> — cited: {sig.competitor_name}</span>}</p>
+                )}
+                <p className="text-sm text-slate-300 mt-1">{sig.description}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── App ────────────────────────────────────────────────────────────────────────
+
+function App() {
+  const [view, setView]               = useState('radar');       // 'radar' | 'deals' | 'deal'
+  const [deals, setDeals]             = useState([]);
+  const [radar, setRadar]             = useState([]);
+  const [selectedDeal, setSelectedDeal] = useState(null);
+  const [dealSignals, setDealSignals] = useState([]);
+  const [showDealModal, setShowDealModal]     = useState(false);
+  const [showSignalModal, setShowSignalModal] = useState(false);
+  const [editingDeal, setEditingDeal] = useState(null);
+
+  const loadDeals = useCallback(async () => {
+    const data = await api('/deals');
+    setDeals(data);
+  }, []);
+
+  const loadRadar = useCallback(async () => {
+    const data = await api('/radar');
+    setRadar(data);
+  }, []);
+
+  const loadDeal = useCallback(async (id) => {
+    const [deal, sigs] = await Promise.all([api(`/deals/${id}`), api(`/deals/${id}/signals`)]);
+    setSelectedDeal(deal);
+    setDealSignals(sigs);
+    setView('deal');
+  }, []);
+
+  useEffect(() => { loadDeals(); loadRadar(); }, []);
+
+  const handleAddDeal = async (form) => {
+    await api('/deals', { method: 'POST', body: JSON.stringify(form) });
+    setShowDealModal(false);
+    setEditingDeal(null);
+    await Promise.all([loadDeals(), loadRadar()]);
+  };
+
+  const handleEditDeal = async (form) => {
+    await api(`/deals/${editingDeal.id}`, { method: 'PUT', body: JSON.stringify(form) });
+    setShowDealModal(false);
+    if (selectedDeal?.id === editingDeal.id) await loadDeal(editingDeal.id);
+    setEditingDeal(null);
+    await Promise.all([loadDeals(), loadRadar()]);
+  };
+
+  const handleDeleteDeal = async (id) => {
+    if (!confirm('Delete this deal and all its signals?')) return;
+    await api(`/deals/${id}`, { method: 'DELETE' });
+    await Promise.all([loadDeals(), loadRadar()]);
+  };
+
+  const handleAddSignal = async (form) => {
+    await api(`/deals/${selectedDeal.id}/signals`, { method: 'POST', body: JSON.stringify(form) });
+    setShowSignalModal(false);
+    await loadDeal(selectedDeal.id);
+    await Promise.all([loadDeals(), loadRadar()]);
+  };
+
+  const handleDeleteSignal = async (id) => {
+    await api(`/signals/${id}`, { method: 'DELETE' });
+    await loadDeal(selectedDeal.id);
+    await Promise.all([loadDeals(), loadRadar()]);
+  };
+
+  const openEditDeal = (deal) => { setEditingDeal(deal); setShowDealModal(true); };
+  const openNewDeal  = ()     => { setEditingDeal(null); setShowDealModal(true); };
+
+  const navItem = (v, icon, label) => (
+    <button
+      onClick={() => setView(v)}
+      className={`flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+        view === v ? 'bg-indigo-600/20 text-indigo-400' : 'text-muted hover:text-white hover:bg-white/5'
+      }`}
+    >
+      <Icon name={icon} className="w-4 h-4" />
+      {label}
+    </button>
+  );
+
+  const totalPipeline = deals.filter(d => !d.stage.startsWith('Closed')).reduce((s, d) => s + d.arr_amount, 0);
+
+  return (
+    <div className="flex h-screen overflow-hidden">
+      {/* Sidebar */}
+      <aside className="w-56 flex-shrink-0 bg-surface border-r border-border flex flex-col">
+        <div className="px-4 py-5 border-b border-border">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 bg-indigo-600 rounded-lg flex items-center justify-center">
+              <Icon name="radar" className="w-4 h-4 text-white" />
+            </div>
+            <span className="font-bold text-white">Clairio</span>
+          </div>
+          <p className="text-xs text-muted mt-1">Revenue Intelligence</p>
+        </div>
+
+        <nav className="p-3 space-y-1 flex-1">
+          {navItem('radar', 'radar', 'Deal Blocker Radar')}
+          {navItem('deals', 'deals', 'Deals')}
+        </nav>
+
+        <div className="px-4 py-4 border-t border-border">
+          <p className="text-xs text-muted">Pipeline ARR</p>
+          <p className="font-bold text-white">{fmt(totalPipeline)}</p>
+        </div>
+      </aside>
+
+      {/* Main */}
+      <main className="flex-1 overflow-y-auto">
+        <div className="max-w-6xl mx-auto px-8 py-8">
+          {view === 'radar' && (
+            <div>
+              <div className="mb-6">
+                <h1 className="text-xl font-bold">Deal Blocker Radar</h1>
+                <p className="text-sm text-muted mt-1">ARR-weighted feature gaps and blockers across your pipeline</p>
+              </div>
+              <RadarView
+                radar={radar}
+                onSelectDeal={(id) => { setView('deals'); loadDeal(id); }}
+              />
+            </div>
+          )}
+
+          {view === 'deals' && (
+            <div>
+              <div className="mb-6">
+                <h1 className="text-xl font-bold">Deals</h1>
+                <p className="text-sm text-muted mt-1">Track accounts, ARR, and capture revenue signals</p>
+              </div>
+              <DealsView
+                deals={deals}
+                onOpen={loadDeal}
+                onAdd={openNewDeal}
+                onEdit={openEditDeal}
+                onDelete={handleDeleteDeal}
+              />
+            </div>
+          )}
+
+          {view === 'deal' && (
+            <DealDetailView
+              deal={selectedDeal}
+              signals={dealSignals}
+              onBack={() => setView('deals')}
+              onAddSignal={() => setShowSignalModal(true)}
+              onDeleteSignal={handleDeleteSignal}
+              onEditDeal={openEditDeal}
+            />
+          )}
+        </div>
+      </main>
+
+      {/* Modals */}
+      {showDealModal && (
+        <Modal
+          title={editingDeal ? `Edit — ${editingDeal.account_name}` : 'New Deal'}
+          onClose={() => { setShowDealModal(false); setEditingDeal(null); }}
+        >
+          <DealForm
+            initial={editingDeal || {}}
+            onSave={editingDeal ? handleEditDeal : handleAddDeal}
+            onCancel={() => { setShowDealModal(false); setEditingDeal(null); }}
+          />
+        </Modal>
+      )}
+
+      {showSignalModal && (
+        <Modal title="Add Signal" onClose={() => setShowSignalModal(false)}>
+          <div className="mb-4 p-3 bg-indigo-950/40 border border-indigo-800/50 rounded-lg text-xs text-indigo-300">
+            Multipliers: Blocker ×1.5 · Compliance ×1.3 · Competitor ×1.2 · Timeline ×1.2 · Medium ×0.8 · Low ×0.6
+          </div>
+          <SignalForm
+            onSave={handleAddSignal}
+            onCancel={() => setShowSignalModal(false)}
+          />
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
