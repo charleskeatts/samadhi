@@ -21,11 +21,13 @@ model Account {
   trialEndsAt          DateTime?
   createdAt            DateTime  @default(now())
 
-  users     User[]
-  contacts  Contact[]
-  companies Company[]
-  deals     Deal[]
-  tasks     Task[]
+  users            User[]
+  contacts         Contact[]
+  companies        Company[]
+  deals            Deal[]
+  tasks            Task[]
+  subscriptions    Subscription[]
+  revenueSnapshots RevenueSnapshot[]
 }
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
@@ -91,6 +93,51 @@ model Company {
   updatedAt DateTime  @updatedAt
   contacts  Contact[]
   deals     Deal[]
+  subscriptions   Subscription[]
+  revenueSnapshots RevenueSnapshot[]
+}
+
+// ── Revenue tracking ───────────────────────────────────────────────────────────
+
+/// A recurring revenue stream one of your customers has with their client (Company).
+model Subscription {
+  id          String   @id @default(cuid())
+  accountId   String
+  account     Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name        String                    // e.g. "Pro plan – 10 seats"
+  pricingModel String                   // flat_monthly | flat_annual | seat_based | usage_based
+  monthlyAmount Float  @default(0)      // base MRR contribution (annual ÷ 12 for annual plans)
+  seats       Int?                      // for seat_based plans
+  unitPrice   Float?                    // price per seat / unit
+  startDate   DateTime
+  endDate     DateTime?                 // null = open-ended
+  isActive    Boolean  @default(true)
+  notes       String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+/// Immutable monthly snapshot — one row per (account, company, month).
+/// Generated/updated when a user closes a month or on-demand recalculation.
+model RevenueSnapshot {
+  id                   String   @id @default(cuid())
+  accountId            String
+  account              Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  companyId            String
+  company              Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  /// First day of the month this snapshot covers, e.g. 2026-03-01
+  month                DateTime
+  beginningMrr         Float    @default(0)
+  endingMrr            Float    @default(0)
+  usageRevenue         Float    @default(0)  // non-recurring variable revenue for that month
+  totalRevenue         Float    @default(0)  // endingMrr + usageRevenue
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@unique([accountId, companyId, month])
+  @@index([accountId, month])
 }
 
 model Deal {
