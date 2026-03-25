@@ -11,13 +11,21 @@ export function currentMonthStart(): Date {
   return monthStart(now.getUTCFullYear(), now.getUTCMonth() + 1);
 }
 
-// ── Per-company calculations ────────────────────────────────────────────────
+/** Format a Date as "Jan 2026" */
+export function fmtMonth(d: Date): string {
+  return d.toLocaleDateString("en-US", { month: "short", year: "numeric", timeZone: "UTC" });
+}
+
+/** Format a number as USD currency string, e.g. "$1,234.00" */
+export function fmtCurrency(n: number): string {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
+}
+
+// ── Per-company calculations ──────────────────────────────────────────────────
 
 /**
  * Customer MRR for a given company in a given month.
- * Sum of all active subscriptions' monthlyAmount where:
- *   - startDate <= end of month
- *   - endDate is null OR endDate > start of month
+ * Sum of monthlyRecurringAmount across active subscriptions covering that month.
  */
 export async function getCompanyMrr(
   accountId: string,
@@ -33,13 +41,13 @@ export async function getCompanyMrr(
       accountId,
       companyId,
       isActive: true,
-      startDate: { lte: endOfMonth },
-      OR: [{ endDate: null }, { endDate: { gt: month } }],
+      contractStartDate: { lte: endOfMonth },
+      OR: [{ contractEndDate: null }, { contractEndDate: { gt: month } }],
     },
-    select: { monthlyAmount: true },
+    select: { monthlyRecurringAmount: true },
   });
 
-  return subs.reduce((sum, s) => sum + s.monthlyAmount, 0);
+  return subs.reduce((sum, s) => sum + s.monthlyRecurringAmount, 0);
 }
 
 /** Customer ARR = 12 × MRR. */
@@ -51,7 +59,7 @@ export async function getCompanyArr(
   return (await getCompanyMrr(accountId, companyId, month)) * 12;
 }
 
-// ── Account-wide aggregates ────────────────────────────────────────────────
+// ── Account-wide aggregates ───────────────────────────────────────────────────
 
 export interface AccountRevenueMetrics {
   totalMrr: number;
@@ -61,7 +69,7 @@ export interface AccountRevenueMetrics {
 }
 
 /**
- * Aggregate MRR/ARR/usage across all companies for an Account in a given month.
+ * Aggregate MRR/ARR/usage across all companies for the month.
  * MRR is computed live from active subscriptions.
  * Usage revenue is summed from RevenueSnapshot rows for that month.
  */
@@ -73,24 +81,22 @@ export async function getAccountRevenueMetrics(
     Date.UTC(month.getUTCFullYear(), month.getUTCMonth() + 1, 0, 23, 59, 59)
   );
 
-  // Live MRR from subscriptions
   const subs = await prisma.subscription.findMany({
     where: {
       accountId,
       isActive: true,
-      startDate: { lte: endOfMonth },
-      OR: [{ endDate: null }, { endDate: { gt: month } }],
+      contractStartDate: { lte: endOfMonth },
+      OR: [{ contractEndDate: null }, { contractEndDate: { gt: month } }],
     },
-    select: { monthlyAmount: true },
+    select: { monthlyRecurringAmount: true },
   });
-  const totalMrr = subs.reduce((sum, s) => sum + s.monthlyAmount, 0);
+  const totalMrr = subs.reduce((sum, s) => sum + s.monthlyRecurringAmount, 0);
 
-  // Usage revenue from snapshots
   const snapshots = await prisma.revenueSnapshot.findMany({
     where: { accountId, month },
-    select: { usageRevenue: true },
+    select: { monthlyUsageRevenue: true },
   });
-  const totalUsageRevenue = snapshots.reduce((sum, s) => sum + s.usageRevenue, 0);
+  const totalUsageRevenue = snapshots.reduce((sum, s) => sum + s.monthlyUsageRevenue, 0);
 
   return {
     totalMrr,
@@ -100,22 +106,74 @@ export async function getAccountRevenueMetrics(
   };
 }
 
-// ── Snapshot generation ────────────────────────────────────────────────────
+/** Top N companies by current MRR for the Dashboard table. */
+export async function getTopCompaniesByMrr(
+  accountId: string,
+  month: Date = currentMonthStart(),
+  limit = 5
+) {
+  const endOfMonth = new Date(
+    Date.UTC(month.getUTCFullYear(), month.getUTCMonth() + 1, 0, 23, 59, 59)
+  );
+
+  // Group active subscriptions by company
+  const rows = await prisma.subscription.groupBy({
+    by: ["companyId"],
+    where: {
+      accountId,
+      isActive: true,
+      contractStartDate: { lte: endOfMonth },
+      OR: [{ contractEndDate: null }, { contractEndDate: { gt: month } }],
+    },
+    _sum: { monthlyRecurringAmount: true },
+    orderBy: { _sum: { monthlyRecurringAmount: "desc" } },
+    take: limit,
+  });
+
+  // Fetch company names + usage snapshots
+  const companyIds = rows.map((r) => r.companyId);
+  const [companies, snapshots] = await Promise.all([
+    prisma.company.findMany({ where: { id: { in: companyIds } }, select: { id: true, name: true } }),
+    prisma.revenueSnapshot.findMany({
+      where: { accountId, companyId: { in: companyIds }, month },
+      select: { companyId: true, monthlyUsageRevenue: true, totalRevenue: true },
+    }),
+  ]);
+
+  const companyMap = Object.fromEntries(companies.map((c) => [c.id, c.name]));
+  const snapshotMap = Object.fromEntries(
+    snapshots.map((s) => [s.companyId, s])
+  );
+
+  return rows.map((r) => {
+    const mrr = r._sum.monthlyRecurringAmount ?? 0;
+    const snap = snapshotMap[r.companyId];
+    return {
+      companyId: r.companyId,
+      companyName: companyMap[r.companyId] ?? "Unknown",
+      mrr,
+      arr: mrr * 12,
+      usageRevenue: snap?.monthlyUsageRevenue ?? 0,
+      totalRevenue: snap?.totalRevenue ?? mrr,
+    };
+  });
+}
+
+// ── Snapshot generation ───────────────────────────────────────────────────────
 
 /**
  * Upsert a RevenueSnapshot for a given company + month.
- * Calculates endingMrr live; beginningMrr comes from the previous month's snapshot.
- * Pass usageRevenue explicitly (entered by the user).
+ * Calculates endingMrr live from active subscriptions.
+ * beginningMrr is taken from the previous month's snapshot (0 if none).
  */
 export async function upsertRevenueSnapshot(
   accountId: string,
   companyId: string,
   month: Date,
-  usageRevenue: number
+  monthlyUsageRevenue: number
 ): Promise<void> {
   const endingMrr = await getCompanyMrr(accountId, companyId, month);
 
-  // Previous month
   const prevMonth = new Date(
     Date.UTC(month.getUTCFullYear(), month.getUTCMonth() - 1, 1)
   );
@@ -133,19 +191,21 @@ export async function upsertRevenueSnapshot(
       month,
       beginningMrr,
       endingMrr,
-      usageRevenue,
-      totalRevenue: endingMrr + usageRevenue,
+      monthlyUsageRevenue,
+      totalRecurringRevenue: endingMrr,
+      totalRevenue: endingMrr + monthlyUsageRevenue,
     },
     update: {
       beginningMrr,
       endingMrr,
-      usageRevenue,
-      totalRevenue: endingMrr + usageRevenue,
+      monthlyUsageRevenue,
+      totalRecurringRevenue: endingMrr,
+      totalRevenue: endingMrr + monthlyUsageRevenue,
     },
   });
 }
 
-// ── Per-company history ────────────────────────────────────────────────────
+// ── Per-company history ───────────────────────────────────────────────────────
 
 export async function getCompanyRevenueHistory(
   accountId: string,
