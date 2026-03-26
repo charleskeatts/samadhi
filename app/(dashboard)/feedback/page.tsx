@@ -4,6 +4,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
+import FeedbackSection from '@/components/feedback/FeedbackSection';
 import FeedbackTable from '@/components/feedback/FeedbackTable';
 
 async function getFeedback() {
@@ -62,6 +63,9 @@ export default async function FeedbackPage() {
           All customer feedback captured from sales calls, classified by AI
         </p>
       </div>
+
+      {/* Log feedback form */}
+      <FeedbackSection />
 
       {/* Table */}
       <FeedbackTable initialData={feedback} />
