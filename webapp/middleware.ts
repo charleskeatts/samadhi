@@ -1,11 +1,12 @@
 import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import { prisma } from "@/lib/db";
 
 const PUBLIC_PATHS = ["/login", "/signup", "/api/auth", "/api/stripe/webhook"];
 
-export default auth(async function middleware(req: NextRequest & { auth: any }) {
+// Subscription statuses that grant access
+const ACTIVE_STATUSES = new Set(["trialing", "active"]);
+
+export default auth(function middleware(req) {
   const { pathname } = req.nextUrl;
 
   // Allow public paths through
@@ -13,25 +14,22 @@ export default auth(async function middleware(req: NextRequest & { auth: any }) 
     return NextResponse.next();
   }
 
-  // Require auth for everything else
+  // Require auth
   if (!req.auth?.user) {
-    return NextResponse.redirect(new URL("/login", req.url));
+    const loginUrl = new URL("/login", req.url);
+    loginUrl.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
-  // Check subscription for app pages (skip billing page itself)
+  // Subscription gate — stored in JWT token by the auth callback.
+  // Billing page and all API routes are exempt.
   if (!pathname.startsWith("/billing") && !pathname.startsWith("/api")) {
-    const accountId = (req.auth.user as any).accountId as string;
-    const account = await prisma.account.findUnique({
-      where: { id: accountId },
-      select: { subscriptionStatus: true, trialEndsAt: true },
-    });
+    const status = (req.auth as any).subscriptionStatus as string | undefined;
+    const trialEnd = (req.auth as any).trialEndsAt as string | undefined;
 
-    const now = new Date();
     const isTrialing =
-      account?.subscriptionStatus === "trialing" &&
-      account?.trialEndsAt &&
-      account.trialEndsAt > now;
-    const isActive = account?.subscriptionStatus === "active";
+      status === "trialing" && trialEnd && new Date(trialEnd) > new Date();
+    const isActive = status === "active";
 
     if (!isTrialing && !isActive) {
       return NextResponse.redirect(new URL("/billing", req.url));

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { signOut } from "next-auth/react";
 import { clsx } from "clsx";
 import {
   LayoutDashboard,
@@ -89,15 +90,13 @@ export function Sidebar({ accountName, userEmail }: SidebarProps) {
           </Link>
         ))}
 
-        <form action="/api/auth/signout" method="POST">
-          <button
-            type="submit"
-            className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-400 transition-colors hover:bg-white/5 hover:text-white"
-          >
-            <LogOut className="h-4 w-4" />
-            Logout
-          </button>
-        </form>
+        <button
+          onClick={() => signOut({ callbackUrl: "/login" })}
+          className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-400 transition-colors hover:bg-white/5 hover:text-white"
+        >
+          <LogOut className="h-4 w-4" />
+          Logout
+        </button>
 
         <div className="mt-2 truncate px-3 py-1 text-xs text-slate-600">{userEmail}</div>
       </div>

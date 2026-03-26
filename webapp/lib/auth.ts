@@ -21,6 +21,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const user = await prisma.user.findUnique({
           where: { email: credentials.email as string },
+          include: { account: { select: { subscriptionStatus: true, trialEndsAt: true } } },
         });
         if (!user) return null;
 
@@ -30,7 +31,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         );
         if (!valid) return null;
 
-        return { id: user.id, name: user.name, email: user.email, accountId: user.accountId, role: user.role };
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          accountId: user.accountId,
+          role: user.role,
+          subscriptionStatus: user.account.subscriptionStatus,
+          trialEndsAt: user.account.trialEndsAt?.toISOString() ?? null,
+        };
       },
     }),
   ],
@@ -39,6 +48,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token.accountId = (user as any).accountId;
         token.role = (user as any).role;
+        token.subscriptionStatus = (user as any).subscriptionStatus;
+        token.trialEndsAt = (user as any).trialEndsAt;
       }
       return token;
     },
@@ -46,6 +57,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       session.user.id = token.sub!;
       (session.user as any).accountId = token.accountId;
       (session.user as any).role = token.role;
+      (session.user as any).subscriptionStatus = token.subscriptionStatus;
+      (session.user as any).trialEndsAt = token.trialEndsAt;
       return session;
     },
   },
