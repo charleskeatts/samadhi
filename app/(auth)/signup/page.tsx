@@ -24,7 +24,7 @@ export default function SignupPage() {
         email: email.trim(),
         password: Math.random().toString(36).slice(2), // Random password (unused — magic link auth)
         options: {
-          emailRedirectTo: `${window.location.origin}/api/auth/callback`,
+          emailRedirectTo: `${window.location.origin}/callback`,
           data: {
             full_name: fullName,
             role: role,
