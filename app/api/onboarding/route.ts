@@ -5,6 +5,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
+import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import { seedDemoData } from '@/lib/supabase/seed-demo';
 
@@ -19,16 +20,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Use session client only to verify the user is authenticated
     const supabase = await createClient();
-
-    // Get authenticated user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
+    // Use service role client to bypass RLS for bootstrap org/profile creation
+    // (new users have no org_id yet, so RLS would block them — chicken-and-egg)
+    const admin = createServiceClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
     // Check if profile already exists (prevent duplicate orgs)
-    const { data: existingProfile } = await supabase
+    const { data: existingProfile } = await admin
       .from('profiles')
       .select('id')
       .eq('id', user.id)
@@ -46,7 +53,7 @@ export async function POST(request: NextRequest) {
       .replace(/^-|-$/g, '');
 
     // Create the organization
-    const { data: org, error: orgError } = await supabase
+    const { data: org, error: orgError } = await admin
       .from('organizations')
       .insert({ name: company_name.trim(), slug })
       .select('id')
@@ -58,7 +65,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create the user profile
-    const { error: profileError } = await supabase
+    const { error: profileError } = await admin
       .from('profiles')
       .insert({
         id: user.id,
@@ -70,7 +77,7 @@ export async function POST(request: NextRequest) {
     if (profileError) {
       console.error('Error creating profile:', profileError);
       // Clean up the org we just created
-      await supabase.from('organizations').delete().eq('id', org.id);
+      await admin.from('organizations').delete().eq('id', org.id);
       return NextResponse.json({ error: 'Failed to create profile' }, { status: 500 });
     }
 
