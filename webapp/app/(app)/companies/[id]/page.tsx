@@ -14,6 +14,8 @@ import { RevenueSection } from "@/components/companies/RevenueSection";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { LinkButton } from "@/components/ui/button";
+import { DeleteButton } from "@/components/ui/delete-button";
+import { deleteCompany } from "@/app/actions/companies";
 import { Building2, Globe, ArrowLeft, Users, Briefcase } from "lucide-react";
 
 export async function generateMetadata({ params }: { params: { id: string } }) {
@@ -83,9 +85,13 @@ export default async function CompanyDetailPage({ params }: { params: { id: stri
             </div>
           </div>
         </div>
-        <LinkButton href={`/companies/${company.id}/edit`} variant="secondary" size="sm">
-          Edit
-        </LinkButton>
+        <div className="flex items-center gap-2">
+          <LinkButton href={`/companies/${company.id}/edit`} variant="secondary" size="sm">Edit</LinkButton>
+          <DeleteButton
+            action={async () => { "use server"; await deleteCompany(company.id); }}
+            confirm="Delete this company? All subscriptions and revenue data will be lost."
+          />
+        </div>
       </div>
 
       {/* MRR / ARR quick stats */}
