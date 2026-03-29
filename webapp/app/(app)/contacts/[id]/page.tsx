@@ -84,9 +84,13 @@ export default async function ContactDetailPage({ params }: { params: { id: stri
             </section>
           )}
           {/* Open tasks */}
-          {contact.tasks.length > 0 && (
-            <section className="space-y-2">
+          <section className="space-y-2">
+            <div className="flex items-center justify-between">
               <h2 className="text-sm font-semibold text-slate-300">Open tasks</h2>
+              <LinkButton href={`/tasks/new?contactId=${contact.id}`} size="sm" variant="ghost">+ Add</LinkButton>
+            </div>
+          {contact.tasks.length > 0 && (
+            <>
               <ul className="space-y-1">
                 {contact.tasks.map((t) => (
                   <li key={t.id} className="rounded-lg bg-white/5 px-3 py-2 text-sm">
@@ -99,8 +103,9 @@ export default async function ContactDetailPage({ params }: { params: { id: stri
                   </li>
                 ))}
               </ul>
-            </section>
+            </>
           )}
+          </section>
         </div>
 
         {/* Deals */}

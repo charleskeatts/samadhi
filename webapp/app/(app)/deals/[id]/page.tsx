@@ -86,7 +86,10 @@ export default async function DealDetailPage({ params }: { params: { id: string 
 
         <div className="col-span-1 space-y-4">
           <section className="space-y-2">
-            <h2 className="text-sm font-semibold text-slate-300">Open tasks</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-slate-300">Open tasks</h2>
+              <LinkButton href={`/tasks/new?dealId=${deal.id}`} size="sm" variant="ghost">+ Add</LinkButton>
+            </div>
             {deal.tasks.length === 0 ? (
               <p className="text-xs text-slate-600">No open tasks</p>
             ) : (
