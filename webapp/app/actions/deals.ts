@@ -5,6 +5,9 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { requireAccountId } from "@/lib/session";
 
+export const STAGES = ["Lead", "Qualified", "Proposal", "Negotiation", "Won", "Lost"] as const;
+export type Stage = (typeof STAGES)[number];
+
 export type DealData = {
   title: string;
   contactId: string;
@@ -50,6 +53,16 @@ export async function updateDeal(id: string, data: DealData) {
     },
   });
   revalidatePath(`/deals/${id}`);
+  revalidatePath("/deals");
+}
+
+/** Called by the Kanban board on drag-end. */
+export async function updateDealStage(id: string, stage: Stage) {
+  const accountId = await requireAccountId();
+  const deal = await prisma.deal.findFirst({ where: { id, accountId } });
+  if (!deal) throw new Error("Not found");
+  await prisma.deal.update({ where: { id }, data: { stage } });
+  revalidatePath("/deals/board");
   revalidatePath("/deals");
 }
 
