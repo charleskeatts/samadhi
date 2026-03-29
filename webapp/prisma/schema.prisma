@@ -28,6 +28,8 @@ model Account {
   tasks            Task[]
   subscriptions    Subscription[]
   revenueSnapshots RevenueSnapshot[]
+  contracts        Contract[]
+  invoices         Invoice[]
 }
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
@@ -93,8 +95,10 @@ model Company {
   updatedAt DateTime  @updatedAt
   contacts  Contact[]
   deals     Deal[]
-  subscriptions   Subscription[]
+  subscriptions    Subscription[]
   revenueSnapshots RevenueSnapshot[]
+  contracts        Contract[]
+  invoices         Invoice[]
 }
 
 // ── Revenue tracking ───────────────────────────────────────────────────────────
@@ -174,4 +178,50 @@ model Task {
   deal        Deal?     @relation(fields: [dealId], references: [id], onDelete: SetNull)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+}
+
+// ── Contracts & Invoices ──────────────────────────────────────────────────────
+
+/// A legal agreement / contract with a customer company.
+model Contract {
+  id          String    @id @default(cuid())
+  accountId   String
+  account     Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  companyId   String
+  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  title       String
+  status      String    @default("active") // draft | active | expired | terminated
+  value       Float     @default(0)
+  startDate   DateTime
+  renewalDate DateTime?                    // next renewal — used for 30/60-day alerts
+  autoRenews  Boolean   @default(false)
+  notes       String    @default("")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  invoices    Invoice[]
+
+  @@index([accountId, renewalDate])
+}
+
+/// An invoice sent to a customer company (may be linked to a contract).
+model Invoice {
+  id          String    @id @default(cuid())
+  accountId   String
+  account     Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  companyId   String
+  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  contractId  String?
+  contract    Contract? @relation(fields: [contractId], references: [id], onDelete: SetNull)
+  number      String                       // e.g. INV-2026-001
+  status      String    @default("draft")  // draft | sent | paid | overdue | void
+  amount      Float
+  invoiceDate DateTime
+  dueDate     DateTime
+  paidDate    DateTime?
+  notes       String    @default("")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([accountId, status])
+  @@index([accountId, companyId])
 }

@@ -11,6 +11,8 @@ import {
 } from "@/lib/revenue";
 import { SubscriptionsSection } from "@/components/companies/SubscriptionsSection";
 import { RevenueSection } from "@/components/companies/RevenueSection";
+import { ContractsSection } from "@/components/companies/ContractsSection";
+import { InvoicesSection } from "@/components/companies/InvoicesSection";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { LinkButton } from "@/components/ui/button";
@@ -31,6 +33,8 @@ export default async function CompanyDetailPage({ params }: { params: { id: stri
       contacts: { orderBy: { name: "asc" } },
       deals: { orderBy: { createdAt: "desc" }, take: 5 },
       subscriptions: { orderBy: { contractStartDate: "asc" } },
+      contracts: { orderBy: { startDate: "desc" } },
+      invoices: { orderBy: { invoiceDate: "desc" } },
     },
   });
 
@@ -49,6 +53,11 @@ export default async function CompanyDetailPage({ params }: { params: { id: stri
   );
   const currentUsage = currentSnap?.monthlyUsageRevenue ?? 0;
   const currentTotal = mrr + currentUsage;
+
+  // Actual revenue = total paid invoices (all time)
+  const totalPaid = company.invoices
+    .filter((inv) => inv.status === "paid")
+    .reduce((sum, inv) => sum + inv.amount, 0);
 
   return (
     <div className="space-y-8">
@@ -94,21 +103,27 @@ export default async function CompanyDetailPage({ params }: { params: { id: stri
         </div>
       </div>
 
-      {/* MRR / ARR quick stats */}
-      <div className="grid grid-cols-3 gap-4">
+      {/* Revenue quick stats — 4 cards */}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <Card>
           <p className="text-xs text-slate-400">Customer MRR</p>
           <p className="mt-1 text-2xl font-bold tabular-nums">{fmtCurrency(mrr)}</p>
+          <p className="text-xs text-slate-600 mt-0.5">recurring / month</p>
         </Card>
         <Card>
           <p className="text-xs text-slate-400">Customer ARR</p>
           <p className="mt-1 text-2xl font-bold tabular-nums">{fmtCurrency(arr)}</p>
+          <p className="text-xs text-slate-600 mt-0.5">run rate</p>
         </Card>
         <Card>
-          <p className="text-xs text-slate-400">Active subscriptions</p>
-          <p className="mt-1 text-2xl font-bold">
-            {company.subscriptions.filter((s) => s.isActive).length}
-          </p>
+          <p className="text-xs text-slate-400">Usage revenue</p>
+          <p className="mt-1 text-2xl font-bold tabular-nums">{fmtCurrency(currentUsage)}</p>
+          <p className="text-xs text-slate-600 mt-0.5">this month</p>
+        </Card>
+        <Card>
+          <p className="text-xs text-slate-400">Actual revenue</p>
+          <p className="mt-1 text-2xl font-bold tabular-nums text-green-400">{fmtCurrency(totalPaid)}</p>
+          <p className="text-xs text-slate-600 mt-0.5">total paid invoices</p>
         </Card>
       </div>
 
@@ -183,12 +198,26 @@ export default async function CompanyDetailPage({ params }: { params: { id: stri
           )}
         </div>
 
-        {/* Right: Subscriptions + Revenue */}
-        <div className="col-span-2 space-y-10">
-          <div className="rounded-xl border border-white/10 bg-white/5 p-6 space-y-6">
+        {/* Right: Subscriptions + Contracts + Invoices + Revenue */}
+        <div className="col-span-2 space-y-6">
+          <div className="rounded-xl border border-white/10 bg-white/5 p-6">
             <SubscriptionsSection
               companyId={company.id}
               subscriptions={company.subscriptions}
+            />
+          </div>
+
+          <div className="rounded-xl border border-white/10 bg-white/5 p-6">
+            <ContractsSection
+              companyId={company.id}
+              contracts={company.contracts}
+            />
+          </div>
+
+          <div className="rounded-xl border border-white/10 bg-white/5 p-6">
+            <InvoicesSection
+              companyId={company.id}
+              invoices={company.invoices}
             />
           </div>
 
