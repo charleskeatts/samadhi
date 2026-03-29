@@ -58,9 +58,8 @@ export default function BacklogPage() {
   const [sortBy, setSortBy] = useState<SortKey>('arr');
   const [filterCategory, setFilterCategory] = useState('All');
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const supabase = createClient();
-
   useEffect(() => {
+    const supabase = createClient();
     const load = async () => {
       const { data: feats } = await supabase
         .from('feature_requests')
@@ -95,7 +94,7 @@ export default function BacklogPage() {
       setLoading(false);
     };
     load();
-  }, [supabase]);
+  }, []);
 
   const categories = ['All', ...Array.from(new Set(features.map((f) => f.category ?? 'General')))];
 

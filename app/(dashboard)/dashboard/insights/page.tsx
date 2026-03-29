@@ -17,9 +17,8 @@ export default function InsightsPage() {
   const [selectedFeature, setSelectedFeature] = useState<FeatureRequest | null>(null);
   const [generatingBrief, setGeneratingBrief] = useState<string | null>(null);
   const [briefError, setBriefError] = useState<string | null>(null);
-  const supabase = createClient();
-
   useEffect(() => {
+    const supabase = createClient();
     const fetchFeatures = async () => {
       try {
         const { data } = await supabase
@@ -36,7 +35,7 @@ export default function InsightsPage() {
     };
 
     fetchFeatures();
-  }, [supabase]);
+  }, []);
 
   const handleGenerateBrief = async (featureId: string) => {
     setGeneratingBrief(featureId);

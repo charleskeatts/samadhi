@@ -13,9 +13,9 @@ export default function SettingsPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [org, setOrg] = useState<Organization | null>(null);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
 
   useEffect(() => {
+    const supabase = createClient();
     const loadData = async () => {
       try {
         const {
@@ -50,7 +50,7 @@ export default function SettingsPage() {
     };
 
     loadData();
-  }, [supabase]);
+  }, []);
 
   if (loading) {
     return <div className="text-center py-12">Loading settings...</div>;
