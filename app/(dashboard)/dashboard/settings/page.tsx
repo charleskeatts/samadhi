@@ -173,7 +173,7 @@ export default function SettingsPage() {
               Sync leads, accounts, and opportunities
             </p>
             <button className="btn btn-secondary w-full opacity-50 cursor-not-allowed">
-              Coming in Phase 6
+              Coming soon
             </button>
           </div>
 
@@ -183,7 +183,7 @@ export default function SettingsPage() {
               Import deals and contacts
             </p>
             <button className="btn btn-secondary w-full opacity-50 cursor-not-allowed">
-              Coming in Phase 6
+              Coming soon
             </button>
           </div>
         </div>
