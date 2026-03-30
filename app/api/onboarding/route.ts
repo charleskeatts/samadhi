@@ -42,7 +42,8 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (existingProfile) {
-      return NextResponse.json({ error: 'Profile already exists' }, { status: 409 });
+      // Already onboarded — user clicked magic link again or refreshed. Just send them to dashboard.
+      return NextResponse.json({ success: true });
     }
 
     // Create slug from company name (lowercase, hyphens)
