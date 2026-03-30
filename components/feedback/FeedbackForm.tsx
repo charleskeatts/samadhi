@@ -7,7 +7,6 @@
 'use client';
 
 import { useState } from 'react';
-import { CheckCircle, AlertCircle } from 'lucide-react';
 
 interface FeedbackFormProps {
   onSuccess?: () => void;
@@ -47,11 +46,10 @@ export default function FeedbackForm({ onSuccess }: FeedbackFormProps) {
       setArr('');
       setRawText('');
 
-      // Reset success message after 3 seconds
       setTimeout(() => {
         setSuccess(false);
         onSuccess?.();
-      }, 3000);
+      }, 2000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -61,34 +59,36 @@ export default function FeedbackForm({ onSuccess }: FeedbackFormProps) {
 
   if (success) {
     return (
-      <div className="card border-2 border-green-200 bg-green-50">
-        <div className="flex items-center gap-3">
-          <CheckCircle className="w-6 h-6 text-green-600" />
-          <div>
-            <p className="font-semibold text-green-900">Feedback logged!</p>
-            <p className="text-sm text-green-700">AI is classifying and analyzing...</p>
-          </div>
-        </div>
+      <div className="card" style={{ borderTop: '2px solid var(--green)', textAlign: 'center', padding: '1.5rem' }}>
+        <div style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: '1.5rem', color: 'var(--green)', marginBottom: '0.5rem' }}>✓</div>
+        <div style={{ fontSize: '11px', color: 'var(--ink-dim)', letterSpacing: '0.08em' }}>Feedback logged</div>
+        <div style={{ fontSize: '10px', color: 'var(--ink-muted)', marginTop: '0.25rem' }}>AI is classifying and analyzing...</div>
       </div>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit} className="card space-y-4">
-      <h2 className="text-lg font-semibold text-slate-900">Log Feedback</h2>
+    <form onSubmit={handleSubmit} className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <div style={{
+        fontFamily: '"Cormorant Garamond", serif',
+        fontSize: '1rem',
+        fontWeight: 300,
+        color: 'var(--ink)',
+        letterSpacing: '0.06em',
+        marginBottom: '0.25rem',
+      }}>
+        Log Feedback
+      </div>
 
       {error && (
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
-          <AlertCircle className="w-4 h-4 flex-shrink-0" />
-          <span>{error}</span>
+        <div style={{ padding: '0.6rem 0.8rem', border: '1px solid #5a2020', background: '#120808', fontSize: '10px', color: '#ee8870', letterSpacing: '0.06em' }}>
+          {error}
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-4">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
         <div>
-          <label htmlFor="accountName" className="label">
-            Account Name
-          </label>
+          <label htmlFor="accountName" className="label">Account Name</label>
           <input
             id="accountName"
             type="text"
@@ -100,9 +100,7 @@ export default function FeedbackForm({ onSuccess }: FeedbackFormProps) {
           />
         </div>
         <div>
-          <label htmlFor="arr" className="label">
-            Annual Revenue ($)
-          </label>
+          <label htmlFor="arr" className="label">Annual Revenue ($)</label>
           <input
             id="arr"
             type="number"
@@ -116,9 +114,7 @@ export default function FeedbackForm({ onSuccess }: FeedbackFormProps) {
       </div>
 
       <div>
-        <label htmlFor="rawText" className="label">
-          What did the customer say?
-        </label>
+        <label htmlFor="rawText" className="label">What did the customer say?</label>
         <textarea
           id="rawText"
           value={rawText}
@@ -126,16 +122,18 @@ export default function FeedbackForm({ onSuccess }: FeedbackFormProps) {
           placeholder="Paste the customer feedback here... (notes from call, Slack message, etc.)"
           required
           rows={5}
-          className="input resize-none"
+          className="input"
+          style={{ resize: 'none' }}
         />
       </div>
 
       <button
         type="submit"
         disabled={loading}
-        className="w-full btn btn-primary bg-sky-500 hover:bg-sky-600 disabled:opacity-50"
+        className="btn btn-primary"
+        style={{ alignSelf: 'flex-start', padding: '0.65rem 1.4rem', opacity: loading ? 0.5 : 1 }}
       >
-        {loading ? 'Submitting...' : 'Submit Feedback'}
+        {loading ? 'Submitting...' : 'Submit Feedback →'}
       </button>
     </form>
   );

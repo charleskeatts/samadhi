@@ -18,7 +18,6 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
 
-  // Editable fields
   const [fullName, setFullName] = useState('');
   const [role, setRole] = useState<Role>('sales_rep');
 
@@ -86,21 +85,36 @@ export default function SettingsPage() {
   };
 
   if (loading) {
-    return <div className="text-center py-12">Loading settings...</div>;
+    return (
+      <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--ink-muted)', fontSize: '11px', letterSpacing: '0.12em' }}>
+        Loading settings...
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-8">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-slate-900">Settings</h1>
-        <p className="text-slate-600 mt-2">Manage your profile and organization</p>
+        <h1 className="page-title">Settings</h1>
+        <p className="page-subtitle">Profile and organization configuration</p>
       </div>
 
       {/* Profile section */}
       <div className="card">
-        <h2 className="text-lg font-semibold text-slate-900 mb-6">Your Profile</h2>
-        <form onSubmit={handleSave} className="space-y-4">
+        <div style={{
+          fontFamily: '"Cormorant Garamond", serif',
+          fontSize: '1rem',
+          fontWeight: 300,
+          color: 'var(--ink)',
+          letterSpacing: '0.06em',
+          marginBottom: '1.4rem',
+          paddingBottom: '0.75rem',
+          borderBottom: '1px solid var(--border)',
+        }}>
+          Your Profile
+        </div>
+        <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div>
             <label htmlFor="fullName" className="label">Full Name</label>
             <input
@@ -127,19 +141,24 @@ export default function SettingsPage() {
           </div>
 
           {error && (
-            <p className="text-sm text-red-600">{error}</p>
+            <div style={{ padding: '0.6rem 0.8rem', border: '1px solid #5a2020', background: '#120808', fontSize: '10px', color: '#ee8870', letterSpacing: '0.06em' }}>
+              {error}
+            </div>
           )}
 
-          <div className="flex items-center gap-3 pt-2">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', paddingTop: '0.5rem' }}>
             <button
               type="submit"
               disabled={saving}
-              className="btn btn-primary disabled:opacity-50"
+              className="btn btn-primary"
+              style={{ opacity: saving ? 0.5 : 1 }}
             >
               {saving ? 'Saving...' : 'Save Changes'}
             </button>
             {saved && (
-              <span className="text-sm text-green-600 font-medium">Saved ✓</span>
+              <span style={{ fontSize: '10px', color: 'var(--green)', letterSpacing: '0.12em' }}>
+                Saved ✓
+              </span>
             )}
           </div>
         </form>
@@ -147,44 +166,66 @@ export default function SettingsPage() {
 
       {/* Organization section */}
       <div className="card">
-        <h2 className="text-lg font-semibold text-slate-900 mb-6">Organization</h2>
-        <div className="space-y-4">
+        <div style={{
+          fontFamily: '"Cormorant Garamond", serif',
+          fontSize: '1rem',
+          fontWeight: 300,
+          color: 'var(--ink)',
+          letterSpacing: '0.06em',
+          marginBottom: '1.4rem',
+          paddingBottom: '0.75rem',
+          borderBottom: '1px solid var(--border)',
+        }}>
+          Organization
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div>
-            <label className="label">Organization Name</label>
-            <p className="text-slate-700">{org?.name || 'Not set'}</p>
+            <div className="label">Organization Name</div>
+            <p style={{ fontSize: '13px', color: 'var(--ink-dim)' }}>{org?.name || 'Not set'}</p>
           </div>
           <div>
-            <label className="label">Organization ID</label>
-            <p className="text-slate-700 font-mono text-sm">{org?.id || 'Not set'}</p>
+            <div className="label">Organization ID</div>
+            <p style={{ fontSize: '11px', color: 'var(--ink-muted)', fontFamily: '"DM Mono", monospace' }}>{org?.id || 'Not set'}</p>
           </div>
         </div>
       </div>
 
       {/* CRM Connections section */}
       <div className="card">
-        <h2 className="text-lg font-semibold text-slate-900 mb-6">CRM Connections</h2>
-        <p className="text-slate-600 text-sm mb-6">
+        <div style={{
+          fontFamily: '"Cormorant Garamond", serif',
+          fontSize: '1rem',
+          fontWeight: 300,
+          color: 'var(--ink)',
+          letterSpacing: '0.06em',
+          marginBottom: '0.5rem',
+          paddingBottom: '0.75rem',
+          borderBottom: '1px solid var(--border)',
+        }}>
+          CRM Connections
+        </div>
+        <p style={{ fontSize: '10px', color: 'var(--ink-muted)', letterSpacing: '0.08em', marginBottom: '1.4rem' }}>
           Connect your CRM to automatically sync accounts and pull feedback
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="border border-slate-200 rounded-lg p-4">
-            <h3 className="font-medium text-slate-900 mb-2">Salesforce</h3>
-            <p className="text-sm text-slate-600 mb-4">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <div style={{ border: '1px solid var(--border)', padding: '1rem 1.1rem' }}>
+            <div style={{ fontSize: '11px', color: 'var(--ink-dim)', letterSpacing: '0.08em', marginBottom: '0.4rem' }}>Salesforce</div>
+            <p style={{ fontSize: '10px', color: 'var(--ink-muted)', marginBottom: '1rem', lineHeight: 1.6 }}>
               Sync leads, accounts, and opportunities
             </p>
-            <button className="btn btn-secondary w-full opacity-50 cursor-not-allowed">
-              Coming soon
+            <button className="btn" style={{ width: '100%', opacity: 0.4, cursor: 'not-allowed', fontSize: '9px' }} disabled>
+              Coming Soon
             </button>
           </div>
 
-          <div className="border border-slate-200 rounded-lg p-4">
-            <h3 className="font-medium text-slate-900 mb-2">HubSpot</h3>
-            <p className="text-sm text-slate-600 mb-4">
+          <div style={{ border: '1px solid var(--border)', padding: '1rem 1.1rem' }}>
+            <div style={{ fontSize: '11px', color: 'var(--ink-dim)', letterSpacing: '0.08em', marginBottom: '0.4rem' }}>HubSpot</div>
+            <p style={{ fontSize: '10px', color: 'var(--ink-muted)', marginBottom: '1rem', lineHeight: 1.6 }}>
               Import deals and contacts
             </p>
-            <button className="btn btn-secondary w-full opacity-50 cursor-not-allowed">
-              Coming soon
+            <button className="btn" style={{ width: '100%', opacity: 0.4, cursor: 'not-allowed', fontSize: '9px' }} disabled>
+              Coming Soon
             </button>
           </div>
         </div>

@@ -7,7 +7,8 @@
 
 import { useState } from 'react';
 import { FeedbackWithAccount, FeedbackStatus } from '@/types';
-import { formatARR, timeAgo, getCategoryColor, getSentimentColor, capitalize } from '@/lib/utils';
+import { formatARR, timeAgo, capitalize } from '@/lib/utils';
+import FeedbackForm from './FeedbackForm';
 
 interface FeedbackTableProps {
   initialData: FeedbackWithAccount[];
@@ -16,11 +17,9 @@ interface FeedbackTableProps {
 export default function FeedbackTable({ initialData }: FeedbackTableProps) {
   const [feedback, setFeedback] = useState<FeedbackWithAccount[]>(initialData);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
 
-  const handleStatusChange = async (
-    id: string,
-    newStatus: FeedbackStatus
-  ) => {
+  const handleStatusChange = async (id: string, newStatus: FeedbackStatus) => {
     setUpdatingId(id);
     try {
       const response = await fetch(`/api/feedback/${id}`, {
@@ -30,12 +29,7 @@ export default function FeedbackTable({ initialData }: FeedbackTableProps) {
       });
 
       if (response.ok) {
-        // Update local state
-        setFeedback(
-          feedback.map((f) =>
-            f.id === id ? { ...f, status: newStatus } : f
-          )
-        );
+        setFeedback(feedback.map((f) => f.id === id ? { ...f, status: newStatus } : f));
       }
     } catch (error) {
       console.error('Error updating status:', error);
@@ -45,87 +39,114 @@ export default function FeedbackTable({ initialData }: FeedbackTableProps) {
   };
 
   return (
-    <div className="overflow-x-auto card p-0">
-      <table className="w-full">
-        <thead>
-          <tr className="border-b border-slate-200 bg-slate-50">
-            <th className="text-left py-3 px-4 font-semibold text-slate-900">Account</th>
-            <th className="text-left py-3 px-4 font-semibold text-slate-900">Feedback</th>
-            <th className="text-left py-3 px-4 font-semibold text-slate-900">Category</th>
-            <th className="text-left py-3 px-4 font-semibold text-slate-900">Sentiment</th>
-            <th className="text-left py-3 px-4 font-semibold text-slate-900">Urgency</th>
-            <th className="text-left py-3 px-4 font-semibold text-slate-900">Status</th>
-            <th className="text-left py-3 px-4 font-semibold text-slate-900">ARR</th>
-            <th className="text-left py-3 px-4 font-semibold text-slate-900">Date</th>
-          </tr>
-        </thead>
-        <tbody>
-          {feedback.length > 0 ? (
-            feedback.map((item) => (
-              <tr
-                key={item.id}
-                className="border-b border-slate-200 hover:bg-slate-50 transition-colors"
-              >
-                <td className="py-3 px-4 text-sm font-medium text-slate-900">
-                  {(item.account as any)?.name || 'Unknown'}
-                </td>
-                <td className="py-3 px-4 text-sm text-slate-700 max-w-xs truncate">
-                  {item.raw_text}
-                </td>
-                <td className="py-3 px-4 text-sm">
-                  <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${getCategoryColor(item.category)}`}>
-                    {item.category}
-                  </span>
-                </td>
-                <td className="py-3 px-4 text-sm">
-                  <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${getSentimentColor(item.sentiment)}`}>
-                    {capitalize(item.sentiment)}
-                  </span>
-                </td>
-                <td className="py-3 px-4 text-sm text-slate-900">
-                  <div className="flex items-center gap-1">
-                    {Array.from({ length: 10 }).map((_, i) => (
-                      <div
-                        key={i}
-                        className={`w-1.5 h-4 rounded-full ${
-                          i < item.urgency_score ? 'bg-amber-400' : 'bg-slate-200'
-                        }`}
-                      />
-                    ))}
-                  </div>
-                </td>
-                <td className="py-3 px-4 text-sm">
-                  <select
-                    value={item.status}
-                    onChange={(e) =>
-                      handleStatusChange(item.id, e.target.value as FeedbackStatus)
-                    }
-                    disabled={updatingId === item.id}
-                    className="px-2 py-1 rounded text-sm border border-slate-300 text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <option value="new">New</option>
-                    <option value="reviewed">Reviewed</option>
-                    <option value="in_roadmap">In Roadmap</option>
-                    <option value="shipped">Shipped</option>
-                  </select>
-                </td>
-                <td className="py-3 px-4 text-sm font-semibold text-sky-600">
-                  {formatARR(item.revenue_weight)}
-                </td>
-                <td className="py-3 px-4 text-sm text-slate-500">
-                  {timeAgo(item.created_at)}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+      {/* Log feedback toggle */}
+      <div>
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className={showForm ? 'btn' : 'btn btn-primary'}
+          style={{ fontSize: '9px' }}
+        >
+          {showForm ? 'Cancel' : 'Log Feedback →'}
+        </button>
+      </div>
+
+      {showForm && (
+        <FeedbackForm onSuccess={() => {
+          setShowForm(false);
+          window.location.reload();
+        }} />
+      )}
+
+      {/* Table */}
+      <div style={{ border: '1px solid var(--border)', overflow: 'hidden' }}>
+        <table className="tbl">
+          <thead>
+            <tr>
+              <th>Account</th>
+              <th>Feedback</th>
+              <th>Category</th>
+              <th>Sentiment</th>
+              <th>Urgency</th>
+              <th>Status</th>
+              <th>ARR</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {feedback.length > 0 ? (
+              feedback.map((item) => (
+                <tr key={item.id}>
+                  <td style={{ color: 'var(--ink-dim)', fontSize: '12px' }}>
+                    {(item.account as any)?.name || 'Unknown'}
+                  </td>
+                  <td style={{ maxWidth: '280px' }}>
+                    <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '12px', color: 'var(--ink-muted)' }}>
+                      {item.raw_text}
+                    </span>
+                  </td>
+                  <td>
+                    <span className="chip" style={{ fontSize: '8px', color: 'var(--gold-dim)', borderColor: 'rgba(200,152,43,0.35)' }}>
+                      {item.category}
+                    </span>
+                  </td>
+                  <td>
+                    <span className="chip" style={{
+                      fontSize: '8px',
+                      color: item.sentiment === 'positive' ? 'var(--green)' : item.sentiment === 'negative' ? 'var(--red)' : 'var(--border-bright)',
+                      borderColor: item.sentiment === 'positive' ? 'rgba(74,170,106,0.3)' : item.sentiment === 'negative' ? 'rgba(204,85,72,0.3)' : 'var(--border)',
+                    }}>
+                      {capitalize(item.sentiment)}
+                    </span>
+                  </td>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                      {Array.from({ length: 10 }).map((_, i) => (
+                        <div
+                          key={i}
+                          style={{
+                            width: 3,
+                            height: 14,
+                            background: i < item.urgency_score
+                              ? item.urgency_score >= 8 ? 'var(--red)' : item.urgency_score >= 5 ? 'var(--gold)' : 'var(--green)'
+                              : 'var(--border)',
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </td>
+                  <td>
+                    <select
+                      value={item.status}
+                      onChange={(e) => handleStatusChange(item.id, e.target.value as FeedbackStatus)}
+                      disabled={updatingId === item.id}
+                      className="input"
+                      style={{ fontSize: '10px', padding: '0.25rem 0.5rem', width: 'auto' }}
+                    >
+                      <option value="new">New</option>
+                      <option value="reviewed">Reviewed</option>
+                      <option value="in_roadmap">In Roadmap</option>
+                      <option value="shipped">Shipped</option>
+                    </select>
+                  </td>
+                  <td style={{ color: 'var(--green)', fontFamily: '"DM Mono", monospace', fontSize: '11px' }}>
+                    {formatARR(item.revenue_weight)}
+                  </td>
+                  <td style={{ fontSize: '10px', color: 'var(--ink-muted)', whiteSpace: 'nowrap' }}>
+                    {timeAgo(item.created_at)}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={8} style={{ textAlign: 'center', padding: '3rem', fontSize: '11px', color: 'var(--ink-muted)', letterSpacing: '0.12em' }}>
+                  No feedback yet — click &ldquo;Log Feedback&rdquo; to add your first entry.
                 </td>
               </tr>
-            ))
-          ) : (
-            <tr>
-              <td colSpan={8} className="py-8 px-4 text-center text-slate-500">
-                No feedback yet. Start logging customer feedback!
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

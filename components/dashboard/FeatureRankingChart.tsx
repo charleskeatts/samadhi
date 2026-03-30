@@ -13,7 +13,6 @@ export default function FeatureRankingChart({
   features,
   maxItems = 10,
 }: FeatureRankingChartProps) {
-  // Prepare data for chart
   const chartData = features.slice(0, maxItems).map((feature) => ({
     name: feature.title.substring(0, 30),
     revenue: feature.total_revenue_weight,
@@ -24,12 +23,17 @@ export default function FeatureRankingChart({
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="bg-white p-3 rounded-lg shadow-lg border border-slate-200">
-          <p className="font-medium text-slate-900 text-sm">{data.name}</p>
-          <p className="text-sky-600 font-semibold text-sm">
+        <div style={{
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border)',
+          padding: '0.75rem 1rem',
+          fontSize: '11px',
+        }}>
+          <p style={{ color: 'var(--ink-dim)', marginBottom: '0.3rem' }}>{data.name}</p>
+          <p style={{ color: 'var(--green)', fontFamily: '"DM Mono", monospace' }}>
             {formatARR(data.revenue)}
           </p>
-          <p className="text-slate-500 text-xs">
+          <p style={{ color: 'var(--ink-muted)', fontSize: '10px', marginTop: '0.2rem' }}>
             {data.accounts} account{data.accounts !== 1 ? 's' : ''}
           </p>
         </div>
@@ -45,14 +49,22 @@ export default function FeatureRankingChart({
         layout="vertical"
         margin={{ top: 5, right: 30, left: 250, bottom: 5 }}
       >
-        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-        <XAxis type="number" />
-        <YAxis dataKey="name" type="category" width={240} tick={{ fontSize: 12 }} />
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+        <XAxis
+          type="number"
+          tick={{ fontSize: 10, fill: 'var(--ink-muted)', fontFamily: '"DM Mono", monospace' }}
+        />
+        <YAxis
+          dataKey="name"
+          type="category"
+          width={240}
+          tick={{ fontSize: 11, fill: 'var(--ink-muted)', fontFamily: '"DM Mono", monospace' }}
+        />
         <Tooltip content={<CustomTooltip />} />
         <Bar
           dataKey="revenue"
-          fill="#0ea5e9"
-          radius={[0, 8, 8, 0]}
+          fill="var(--gold-dim)"
+          radius={0}
         />
       </BarChart>
     </ResponsiveContainer>

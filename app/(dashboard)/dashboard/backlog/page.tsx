@@ -1,7 +1,6 @@
 /**
  * Revenue Priority Backlog
  * ARR-ranked feature backlog with table and kanban views.
- * Dark-themed "money view" for product teams.
  */
 
 'use client';
@@ -14,19 +13,25 @@ type View = 'table' | 'kanban';
 type SortKey = 'arr' | 'deals' | 'blocker';
 
 const BLOCKER_LABEL: Record<number, string> = { 5: 'Critical', 4: 'High', 3: 'Medium', 2: 'Low', 1: 'Minimal' };
-const BLOCKER_COLOR: Record<number, string> = { 5: '#ef4444', 4: '#f97316', 3: '#eab308', 2: '#22c55e', 1: '#64748b' };
+const BLOCKER_COLOR: Record<number, string> = {
+  5: 'var(--red)',
+  4: 'var(--orange)',
+  3: 'var(--gold)',
+  2: 'var(--green)',
+  1: 'var(--border-bright)',
+};
 
 const STATUS_DISPLAY: Record<string, string> = {
-  backlog: 'Not Started',
-  planned: 'Planned',
+  backlog:     'Not Started',
+  planned:     'Planned',
   in_progress: 'In Progress',
-  shipped: 'Shipped',
+  shipped:     'Shipped',
 };
-const STATUS_COLOR: Record<string, { bg: string; text: string }> = {
-  backlog:     { bg: 'rgba(71,85,105,0.25)',  text: '#94a3b8' },
-  planned:     { bg: 'rgba(14,165,233,0.15)', text: '#38bdf8' },
-  in_progress: { bg: 'rgba(34,197,94,0.15)',  text: '#4ade80' },
-  shipped:     { bg: 'rgba(163,230,53,0.15)', text: '#a3e635' },
+const STATUS_COLOR: Record<string, string> = {
+  backlog:     'var(--border-bright)',
+  planned:     '#3a7bd5',
+  in_progress: 'var(--gold-dim)',
+  shipped:     'var(--green)',
 };
 
 function fmt(n: number): string {
@@ -45,9 +50,9 @@ function deriveSource(crm_note_id: string | null): string {
 }
 
 function recommendedAction(score: number): string {
-  if (score >= 5) return '🔴 Escalate to CPO immediately — this feature is actively blocking deals this quarter.';
-  if (score >= 4) return '🟠 Add to next sprint. High probability of unlocking stalled pipeline.';
-  return '🟡 Schedule PM discovery session. Validate scope before committing engineering time.';
+  if (score >= 5) return 'Escalate to CPO immediately — this feature is actively blocking deals this quarter.';
+  if (score >= 4) return 'Add to next sprint. High probability of unlocking stalled pipeline.';
+  return 'Schedule PM discovery session. Validate scope before committing engineering time.';
 }
 
 export default function BacklogPage() {
@@ -58,6 +63,7 @@ export default function BacklogPage() {
   const [sortBy, setSortBy] = useState<SortKey>('arr');
   const [filterCategory, setFilterCategory] = useState('All');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
   useEffect(() => {
     const supabase = createClient();
     const load = async () => {
@@ -69,7 +75,6 @@ export default function BacklogPage() {
       if (!feats?.length) { setLoading(false); return; }
       setFeatures(feats);
 
-      // Batch-fetch feedback sources (no N+1)
       const allIds = feats.flatMap((f) => f.feedback_ids);
       if (allIds.length > 0) {
         const { data: fbRows } = await supabase
@@ -111,16 +116,9 @@ export default function BacklogPage() {
   const criticalCount = features.filter((f) => (f.blocker_score ?? 0) === 5).length;
   const totalDeals = features.reduce((s, f) => s + f.account_count, 0);
 
-  const PAGE_BG = '#0A1628';
-  const CARD_BG = '#0D1B3E';
-  const BORDER = 'rgba(255,255,255,0.07)';
-  const TEXT_PRIMARY = '#e2e8f0';
-  const TEXT_MUTED = '#64748b';
-  const GOLD = '#F0A500';
-
   if (loading) {
     return (
-      <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: PAGE_BG, color: TEXT_MUTED }}>
+      <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--ink-muted)', fontSize: '11px', letterSpacing: '0.12em' }}>
         Loading revenue data...
       </div>
     );
@@ -128,105 +126,145 @@ export default function BacklogPage() {
 
   if (features.length === 0) {
     return (
-      <div style={{ minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: PAGE_BG, color: TEXT_MUTED, gap: 12 }}>
-        <p style={{ fontSize: 32 }}>🎯</p>
-        <p style={{ fontWeight: 600, color: TEXT_PRIMARY }}>No features yet</p>
-        <p style={{ fontSize: 14 }}>Add feedback and run the AI consolidation to populate the backlog.</p>
-        <a href="/dashboard/feedback" style={{ marginTop: 8, padding: '8px 20px', borderRadius: 8, background: '#1565C0', color: '#fff', fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>
-          Add Feedback
-        </a>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+        <div>
+          <h1 className="page-title">Revenue Priority</h1>
+          <p className="page-subtitle">Features ranked by ARR at risk</p>
+        </div>
+        <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
+          <div style={{ fontSize: '11px', color: 'var(--ink-muted)', letterSpacing: '0.12em', marginBottom: '1rem' }}>
+            No features yet
+          </div>
+          <p style={{ fontSize: '10px', color: 'var(--border-bright)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
+            Add feedback and run the AI consolidation to populate the backlog.
+          </p>
+          <a href="/dashboard/feedback" className="btn btn-primary" style={{ fontSize: '9px' }}>
+            Add Feedback
+          </a>
+        </div>
       </div>
     );
   }
 
   return (
-    <div style={{ background: PAGE_BG, minHeight: '100%', padding: '28px 0', color: TEXT_PRIMARY }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <div>
-          <h1 style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-0.5px', fontFamily: 'Trebuchet MS, sans-serif' }}>
-            Revenue Priority
-          </h1>
-          <p style={{ fontSize: 13, color: TEXT_MUTED, marginTop: 4 }}>
-            Features ranked by ARR at risk — updated after each AI consolidation
-          </p>
+          <h1 className="page-title">Revenue Priority</h1>
+          <p className="page-subtitle">Features ranked by ARR at risk · updated after AI consolidation</p>
         </div>
         {/* View toggle */}
-        <div style={{ display: 'flex', gap: 6 }}>
+        <div style={{ display: 'flex', gap: '4px' }}>
           {(['table', 'kanban'] as View[]).map((v) => (
-            <button key={v} onClick={() => setView(v)} style={{
-              padding: '6px 16px', borderRadius: 7, fontSize: 13, fontWeight: 500, cursor: 'pointer',
-              background: view === v ? 'rgba(240,165,0,0.15)' : 'transparent',
-              color: view === v ? GOLD : TEXT_MUTED,
-              border: view === v ? `1px solid rgba(240,165,0,0.35)` : `1px solid ${BORDER}`,
-              transition: 'all 0.15s',
-            }}>
-              {v === 'table' ? '📊 Backlog' : '🗂 Board'}
+            <button
+              key={v}
+              onClick={() => setView(v)}
+              className={view === v ? 'btn btn-primary' : 'btn'}
+              style={{ fontSize: '9px' }}
+            >
+              {v === 'table' ? 'Backlog' : 'Board'}
             </button>
           ))}
         </div>
       </div>
 
       {/* KPI row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, marginBottom: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
         {[
-          { label: 'Total ARR at Risk', value: fmt(totalARR), sub: 'across all features', accent: '#1E88E5' },
-          { label: 'Critical Blockers', value: String(criticalCount), sub: 'actively losing deals', accent: '#ef4444' },
-          { label: 'Deals Affected', value: String(totalDeals), sub: 'open accounts impacted', accent: '#f97316' },
-          { label: 'Filtered ARR', value: fmt(filteredARR), sub: `${filtered.length} features shown`, accent: '#00897B' },
+          { label: 'Total ARR at Risk', value: fmt(totalARR), accent: 'var(--gold)' },
+          { label: 'Critical Blockers', value: String(criticalCount), accent: 'var(--red)' },
+          { label: 'Deals Affected', value: String(totalDeals), accent: 'var(--orange)' },
+          { label: 'Filtered ARR', value: fmt(filteredARR), accent: 'var(--green)' },
         ].map((kpi) => (
-          <div key={kpi.label} style={{
-            background: CARD_BG, border: `1px solid ${BORDER}`, borderRadius: 12, padding: '16px 18px',
-            position: 'relative', overflow: 'hidden',
-          }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, ${kpi.accent}, transparent)` }} />
-            <div style={{ fontSize: 10, color: TEXT_MUTED, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
+          <div
+            key={kpi.label}
+            className="card"
+            style={{ borderTop: `2px solid ${kpi.accent}`, borderLeft: 'none', padding: '1rem 1.1rem' }}
+          >
+            <div style={{ fontSize: '8px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: '0.5rem' }}>
               {kpi.label}
             </div>
-            <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-1px', lineHeight: 1 }}>{kpi.value}</div>
-            <div style={{ fontSize: 11, color: TEXT_MUTED, marginTop: 5 }}>{kpi.sub}</div>
+            <div style={{
+              fontFamily: '"Cormorant Garamond", serif',
+              fontSize: '1.8rem',
+              fontWeight: 300,
+              color: kpi.accent,
+              lineHeight: 1,
+            }}>
+              {kpi.value}
+            </div>
           </div>
         ))}
       </div>
 
       {/* Controls */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
           {categories.map((cat) => (
-            <button key={cat} onClick={() => setFilterCategory(cat)} style={{
-              padding: '5px 13px', borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: 'pointer',
-              background: filterCategory === cat ? 'rgba(240,165,0,0.15)' : 'rgba(255,255,255,0.04)',
-              color: filterCategory === cat ? GOLD : TEXT_MUTED,
-              border: filterCategory === cat ? '1px solid rgba(240,165,0,0.35)' : `1px solid ${BORDER}`,
-              transition: 'all 0.15s',
-            }}>{cat}</button>
+            <button
+              key={cat}
+              onClick={() => setFilterCategory(cat)}
+              style={{
+                padding: '0.3rem 0.75rem',
+                fontSize: '9px',
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+                background: filterCategory === cat ? 'rgba(232,184,75,0.08)' : 'transparent',
+                color: filterCategory === cat ? 'var(--gold)' : 'var(--ink-muted)',
+                border: filterCategory === cat ? '1px solid rgba(232,184,75,0.3)' : '1px solid var(--border)',
+                transition: 'all 0.15s',
+                fontFamily: '"DM Mono", monospace',
+              }}
+            >
+              {cat}
+            </button>
           ))}
         </div>
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 12, color: TEXT_MUTED }}>Sort:</span>
-          {([['arr', '💰 ARR'], ['deals', '📋 Deals'], ['blocker', '🔴 Blocker']] as [SortKey, string][]).map(([key, label]) => (
-            <button key={key} onClick={() => setSortBy(key)} style={{
-              padding: '5px 12px', borderRadius: 6, fontSize: 12, cursor: 'pointer',
-              background: sortBy === key ? 'rgba(240,165,0,0.15)' : 'transparent',
-              color: sortBy === key ? GOLD : TEXT_MUTED,
-              border: sortBy === key ? '1px solid rgba(240,165,0,0.35)' : `1px solid ${BORDER}`,
-              fontWeight: sortBy === key ? 700 : 400,
-            }}>{label}</button>
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span style={{ fontSize: '9px', color: 'var(--ink-muted)', letterSpacing: '0.12em' }}>Sort:</span>
+          {([['arr', 'ARR'], ['deals', 'Deals'], ['blocker', 'Blocker']] as [SortKey, string][]).map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => setSortBy(key)}
+              style={{
+                padding: '0.3rem 0.75rem',
+                fontSize: '9px',
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+                background: sortBy === key ? 'rgba(232,184,75,0.08)' : 'transparent',
+                color: sortBy === key ? 'var(--gold)' : 'var(--ink-muted)',
+                border: sortBy === key ? '1px solid rgba(232,184,75,0.3)' : '1px solid var(--border)',
+                fontFamily: '"DM Mono", monospace',
+              }}
+            >
+              {label}
+            </button>
           ))}
         </div>
       </div>
 
       {view === 'table' ? (
         /* ── TABLE VIEW ── */
-        <div style={{ background: 'rgba(13,27,62,0.6)', border: `1px solid ${BORDER}`, borderRadius: 14, overflow: 'hidden' }}>
+        <div style={{ border: '1px solid var(--border)', overflow: 'hidden' }}>
           {/* Header */}
           <div style={{
-            display: 'grid', gridTemplateColumns: '40px 1fr 130px 80px 110px 130px',
-            padding: '11px 20px', borderBottom: `1px solid ${BORDER}`,
-            background: 'rgba(255,255,255,0.02)', fontSize: 10, fontWeight: 700,
-            color: TEXT_MUTED, letterSpacing: '0.08em', textTransform: 'uppercase', gap: 12,
+            display: 'grid',
+            gridTemplateColumns: '40px 1fr 120px 70px 110px 120px',
+            padding: '0.65rem 1.1rem',
+            borderBottom: '1px solid var(--border)',
+            background: 'var(--bg)',
+            fontSize: '8px',
+            fontWeight: 400,
+            color: 'var(--ink-muted)',
+            letterSpacing: '0.18em',
+            textTransform: 'uppercase',
+            gap: '0.75rem',
           }}>
-            <div>#</div><div>Feature</div>
+            <div>#</div>
+            <div>Feature</div>
             <div style={{ textAlign: 'right' }}>ARR at Risk</div>
             <div style={{ textAlign: 'center' }}>Deals</div>
             <div style={{ textAlign: 'center' }}>Blocker</div>
@@ -236,117 +274,108 @@ export default function BacklogPage() {
           {filtered.map((f, i) => {
             const score = f.blocker_score ?? 3;
             const isSelected = selectedId === f.id;
-            const tags: string[] = [f.category ?? 'General'];
-            if (score >= 5) tags.push('Deal Blocker');
+            const blockerColor = BLOCKER_COLOR[score] || 'var(--border-bright)';
 
             return (
               <div key={f.id}>
                 <div
                   onClick={() => setSelectedId(isSelected ? null : f.id)}
                   style={{
-                    display: 'grid', gridTemplateColumns: '40px 1fr 130px 80px 110px 130px',
-                    padding: '0 20px', borderBottom: `1px solid rgba(255,255,255,0.04)`,
-                    cursor: 'pointer', gap: 12, alignItems: 'center', minHeight: 56,
-                    background: isSelected ? 'rgba(240,165,0,0.05)' : 'transparent',
+                    display: 'grid',
+                    gridTemplateColumns: '40px 1fr 120px 70px 110px 120px',
+                    padding: '0 1.1rem',
+                    borderBottom: `1px solid var(--border)`,
+                    cursor: 'pointer',
+                    gap: '0.75rem',
+                    alignItems: 'center',
+                    minHeight: 52,
+                    background: isSelected ? 'rgba(232,184,75,0.04)' : 'transparent',
                     transition: 'background 0.15s',
                   }}
-                  onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; }}
+                  onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = 'rgba(255,255,255,0.015)'; }}
                   onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}
                 >
                   {/* Rank */}
                   <div style={{
-                    width: 24, height: 24, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 11, fontWeight: 700,
-                    background: i < 3 ? 'rgba(240,165,0,0.15)' : 'rgba(255,255,255,0.04)',
-                    color: i < 3 ? GOLD : TEXT_MUTED,
-                  }}>{i + 1}</div>
+                    fontFamily: '"Cormorant Garamond", serif',
+                    fontSize: '1rem',
+                    fontStyle: 'italic',
+                    color: i < 3 ? 'var(--gold)' : 'var(--border-bright)',
+                  }}>
+                    {i + 1}
+                  </div>
 
                   {/* Feature name + tags */}
                   <div>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: TEXT_PRIMARY, lineHeight: 1.3 }}>{f.title}</div>
-                    <div style={{ display: 'flex', gap: 4, marginTop: 4, flexWrap: 'wrap' }}>
-                      {tags.map((t) => (
-                        <span key={t} style={{
-                          fontSize: 10, padding: '2px 6px', borderRadius: 4, fontWeight: 600,
-                          background: t === 'Deal Blocker' ? 'rgba(239,68,68,0.12)' : 'rgba(255,255,255,0.06)',
-                          color: t === 'Deal Blocker' ? '#fca5a5' : TEXT_MUTED,
-                        }}>{t}</span>
-                      ))}
-                    </div>
+                    <div style={{ fontSize: '12.5px', color: 'var(--ink-dim)', lineHeight: 1.3 }}>{f.title}</div>
+                    {f.category && (
+                      <span className="chip" style={{ marginTop: '0.25rem', fontSize: '8px' }}>{f.category}</span>
+                    )}
                   </div>
 
                   {/* ARR */}
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: '-0.5px' }}>{fmt(f.total_revenue_weight)}</div>
+                  <div style={{ textAlign: 'right', fontSize: '13px', color: 'var(--green)', fontFamily: '"DM Mono", monospace' }}>
+                    {fmt(f.total_revenue_weight)}
                   </div>
 
                   {/* Deals */}
                   <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: '#94a3b8' }}>{f.account_count}</div>
-                    <div style={{ fontSize: 10, color: TEXT_MUTED }}>deals</div>
+                    <div style={{ fontSize: '13px', color: 'var(--ink-dim)' }}>{f.account_count}</div>
                   </div>
 
                   {/* Blocker badge */}
                   <div style={{ textAlign: 'center' }}>
-                    <div style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 5,
-                      padding: '4px 10px', borderRadius: 20,
-                      background: `${BLOCKER_COLOR[score]}18`,
-                      border: `1px solid ${BLOCKER_COLOR[score]}33`,
-                    }}>
-                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: BLOCKER_COLOR[score] }} />
-                      <span style={{ fontSize: 11, fontWeight: 700, color: BLOCKER_COLOR[score] }}>
-                        {BLOCKER_LABEL[score]}
-                      </span>
-                    </div>
+                    <span className="chip" style={{ color: blockerColor, borderColor: blockerColor, fontSize: '8px' }}>
+                      {BLOCKER_LABEL[score]}
+                    </span>
                   </div>
 
                   {/* Status */}
                   <div style={{ textAlign: 'center' }}>
-                    <div style={{
-                      display: 'inline-block', padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600,
-                      background: (STATUS_COLOR[f.roadmap_status] ?? STATUS_COLOR.backlog).bg,
-                      color: (STATUS_COLOR[f.roadmap_status] ?? STATUS_COLOR.backlog).text,
-                    }}>
+                    <span className="chip" style={{ color: STATUS_COLOR[f.roadmap_status] || 'var(--border-bright)', borderColor: STATUS_COLOR[f.roadmap_status] || 'var(--border-bright)', fontSize: '8px' }}>
                       {STATUS_DISPLAY[f.roadmap_status] ?? f.roadmap_status}
-                    </div>
+                    </span>
                   </div>
                 </div>
 
                 {/* Expandable detail drawer */}
                 {isSelected && (
                   <div style={{
-                    margin: '0 20px 16px', marginTop: 4,
-                    background: 'rgba(240,165,0,0.04)',
-                    border: '1px solid rgba(240,165,0,0.15)',
-                    borderRadius: 10, padding: '18px 22px',
-                    display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 18,
+                    margin: '0 1.1rem 1rem',
+                    background: 'rgba(232,184,75,0.03)',
+                    border: '1px solid rgba(232,184,75,0.12)',
+                    padding: '1.2rem 1.4rem',
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr 1fr',
+                    gap: '1.2rem',
                   }}>
                     <div>
-                      <div style={{ fontSize: 10, color: TEXT_MUTED, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+                      <div style={{ fontSize: '8px', color: 'var(--ink-muted)', letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
                         Revenue Impact
                       </div>
-                      <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.5px' }}>{fmt(f.total_revenue_weight)}</div>
-                      <div style={{ fontSize: 12, color: TEXT_MUTED, marginTop: 4 }}>
-                        ARR at risk across {f.account_count} account{f.account_count !== 1 ? 's' : ''}
+                      <div style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: '1.6rem', color: 'var(--green)', fontWeight: 300 }}>
+                        {fmt(f.total_revenue_weight)}
+                      </div>
+                      <div style={{ fontSize: '10px', color: 'var(--ink-muted)', marginTop: '0.3rem' }}>
+                        ARR at risk · {f.account_count} account{f.account_count !== 1 ? 's' : ''}
                       </div>
                     </div>
                     <div>
-                      <div style={{ fontSize: 10, color: TEXT_MUTED, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+                      <div style={{ fontSize: '8px', color: 'var(--ink-muted)', letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
                         Signal Sources
                       </div>
                       {(sourceMap[f.id] ?? ['Loading...']).map((s) => (
-                        <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: GOLD }} />
-                          <span style={{ fontSize: 13, color: '#94a3b8' }}>{s}</span>
+                        <div key={s} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.35rem' }}>
+                          <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--gold-dim)' }} />
+                          <span style={{ fontSize: '11px', color: 'var(--ink-muted)' }}>{s}</span>
                         </div>
                       ))}
                     </div>
                     <div>
-                      <div style={{ fontSize: 10, color: TEXT_MUTED, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+                      <div style={{ fontSize: '8px', color: 'var(--ink-muted)', letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
                         Recommended Action
                       </div>
-                      <div style={{ fontSize: 13, color: '#cbd5e1', lineHeight: 1.6 }}>
+                      <div style={{ fontSize: '11px', color: 'var(--ink-muted)', lineHeight: 1.6 }}>
                         {recommendedAction(score)}
                       </div>
                     </div>
@@ -358,45 +387,67 @@ export default function BacklogPage() {
         </div>
       ) : (
         /* ── KANBAN VIEW ── */
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
           {(['backlog', 'planned', 'in_progress', 'shipped'] as const).map((status) => {
             const cols = filtered.filter((f) => f.roadmap_status === status);
             const colARR = cols.reduce((s, f) => s + f.total_revenue_weight, 0);
+            const statusColor = STATUS_COLOR[status];
             return (
-              <div key={status} style={{ background: CARD_BG, border: `1px solid ${BORDER}`, borderRadius: 12, padding: 14 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: (STATUS_COLOR[status] ?? STATUS_COLOR.backlog).text }} />
-                    <span style={{ fontSize: 13, fontWeight: 700, color: '#94a3b8' }}>
-                      {STATUS_DISPLAY[status]}
+              <div key={status}>
+                <div style={{
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border)',
+                  borderTop: `2px solid ${statusColor}`,
+                  padding: '0.75rem 0.9rem',
+                  marginBottom: '0.5rem',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}>
+                  <span style={{ fontSize: '9px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-muted)' }}>
+                    {STATUS_DISPLAY[status]}
+                  </span>
+                  {colARR > 0 && (
+                    <span style={{ fontSize: '9px', color: 'var(--green)', fontFamily: '"DM Mono", monospace' }}>
+                      {fmt(colARR)}
                     </span>
-                  </div>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: GOLD }}>{fmt(colARR)}</span>
+                  )}
                 </div>
                 {cols.length === 0 && (
-                  <div style={{ textAlign: 'center', padding: '20px 0', color: '#334155', fontSize: 13 }}>No features</div>
+                  <div style={{ padding: '1.5rem 0', textAlign: 'center', fontSize: '9px', color: 'var(--border-bright)', letterSpacing: '0.12em' }}>
+                    empty
+                  </div>
                 )}
                 {cols.map((f) => {
                   const score = f.blocker_score ?? 3;
+                  const blockerColor = BLOCKER_COLOR[score] || 'var(--border-bright)';
                   return (
-                    <div key={f.id} style={{
-                      background: 'rgba(255,255,255,0.03)', border: `1px solid ${BORDER}`,
-                      borderRadius: 8, padding: '12px 14px', marginBottom: 10, cursor: 'pointer',
-                      transition: 'border-color 0.15s',
-                    }}
-                      onMouseEnter={(e) => e.currentTarget.style.borderColor = 'rgba(240,165,0,0.3)'}
-                      onMouseLeave={(e) => e.currentTarget.style.borderColor = BORDER}
+                    <div
+                      key={f.id}
+                      style={{
+                        background: 'var(--bg-card)',
+                        border: '1px solid var(--border)',
+                        padding: '0.85rem 0.9rem',
+                        marginBottom: '0.4rem',
+                        cursor: 'pointer',
+                        transition: 'border-color 0.15s',
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--border-bright)'}
+                      onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border)'}
                     >
-                      <div style={{ fontSize: 13, fontWeight: 600, color: TEXT_PRIMARY, lineHeight: 1.4, marginBottom: 8 }}>{f.title}</div>
+                      <div style={{ fontSize: '12px', color: 'var(--ink-dim)', lineHeight: 1.4, marginBottom: '0.5rem' }}>{f.title}</div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: 14, fontWeight: 800 }}>{fmt(f.total_revenue_weight)}</span>
+                        <span style={{ fontSize: '11px', color: 'var(--green)', fontFamily: '"DM Mono", monospace' }}>
+                          {fmt(f.total_revenue_weight)}
+                        </span>
                         <div style={{
-                          width: 8, height: 8, borderRadius: '50%',
-                          background: BLOCKER_COLOR[score],
-                          boxShadow: `0 0 6px ${BLOCKER_COLOR[score]}88`,
+                          width: 6,
+                          height: 6,
+                          borderRadius: '50%',
+                          background: blockerColor,
                         }} />
                       </div>
-                      <div style={{ fontSize: 11, color: TEXT_MUTED, marginTop: 4 }}>
+                      <div style={{ fontSize: '9px', color: 'var(--ink-muted)', marginTop: '0.3rem', letterSpacing: '0.06em' }}>
                         {f.account_count} deal{f.account_count !== 1 ? 's' : ''} · {f.category}
                       </div>
                     </div>
@@ -410,18 +461,25 @@ export default function BacklogPage() {
 
       {/* Bottom bar */}
       <div style={{
-        marginTop: 18, padding: '12px 18px',
-        background: 'rgba(13,27,62,0.4)', border: `1px solid ${BORDER}`,
-        borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12,
+        padding: '0.75rem 1rem',
+        background: 'var(--bg-card)',
+        border: '1px solid var(--border)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        fontSize: '10px',
+        color: 'var(--ink-muted)',
+        letterSpacing: '0.08em',
       }}>
-        <div style={{ color: TEXT_MUTED }}>
-          Showing <span style={{ color: '#94a3b8', fontWeight: 600 }}>{filtered.length} features</span>
-          {' · '}Total ARR at risk: <span style={{ color: GOLD, fontWeight: 700 }}>{fmt(filteredARR)}</span>
+        <div>
+          Showing <span style={{ color: 'var(--ink-dim)' }}>{filtered.length} features</span>
+          {' · '}
+          ARR at risk: <span style={{ color: 'var(--gold)', fontFamily: '"DM Mono", monospace' }}>{fmt(filteredARR)}</span>
         </div>
-        <div style={{ display: 'flex', gap: 14, color: TEXT_MUTED }}>
-          <span>🔴 <span style={{ color: '#fca5a5' }}>{filtered.filter((f) => (f.blocker_score ?? 0) >= 5).length} Critical</span></span>
-          <span>🟠 <span style={{ color: '#fdba74' }}>{filtered.filter((f) => (f.blocker_score ?? 0) === 4).length} High</span></span>
-          <span>🟡 <span style={{ color: '#fde047' }}>{filtered.filter((f) => (f.blocker_score ?? 0) === 3).length} Medium</span></span>
+        <div style={{ display: 'flex', gap: '1rem' }}>
+          <span style={{ color: 'var(--red)' }}>{filtered.filter((f) => (f.blocker_score ?? 0) >= 5).length} Critical</span>
+          <span style={{ color: 'var(--orange)' }}>{filtered.filter((f) => (f.blocker_score ?? 0) === 4).length} High</span>
+          <span style={{ color: 'var(--gold-dim)' }}>{filtered.filter((f) => (f.blocker_score ?? 0) === 3).length} Medium</span>
         </div>
       </div>
     </div>

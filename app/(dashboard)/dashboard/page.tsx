@@ -9,11 +9,11 @@ import { createClient } from '@/lib/supabase/server';
 import KPICards from '@/components/dashboard/KPICards';
 import FeatureRankingChart from '@/components/dashboard/FeatureRankingChart';
 import { formatARR, timeAgo } from '@/lib/utils';
+import Link from 'next/link';
 
 async function getStats() {
   const supabase = await createClient();
 
-  // Get current user's org
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -29,26 +29,22 @@ async function getStats() {
 
   const orgId = profile.org_id;
 
-  // Get feedback count
   const { count: feedbackCount } = await supabase
     .from('feedback')
     .select('id', { count: 'exact' })
     .eq('org_id', orgId);
 
-  // Get total ARR at stake
   const { data: feedbackData } = await supabase
     .from('feedback')
     .select('revenue_weight')
     .eq('org_id', orgId);
   const totalARR = feedbackData?.reduce((sum, f) => sum + (f.revenue_weight || 0), 0) || 0;
 
-  // Get feature requests count
   const { count: featureCount } = await supabase
     .from('feature_requests')
     .select('id', { count: 'exact' })
     .eq('org_id', orgId);
 
-  // Get average urgency
   const { data: urgencyData } = await supabase
     .from('feedback')
     .select('urgency_score')
@@ -58,24 +54,20 @@ async function getStats() {
       ? Math.round(urgencyData.reduce((sum, f) => sum + f.urgency_score, 0) / urgencyData.length)
       : 0;
 
-  // Get recent feedback
   const { data: recentFeedback } = await supabase
     .from('feedback')
-    .select(
-      `
+    .select(`
       id,
       raw_text,
       revenue_weight,
       category,
       created_at,
       accounts:account_id (name)
-    `
-    )
+    `)
     .eq('org_id', orgId)
     .order('created_at', { ascending: false })
     .limit(5);
 
-  // Get top features
   const { data: topFeatures } = await supabase
     .from('feature_requests')
     .select('id, org_id, title, description, total_revenue_weight, account_count, feedback_ids, roadmap_status, category, blocker_score, created_at, updated_at')
@@ -97,17 +89,19 @@ export default async function DashboardPage() {
   const stats = await getStats();
 
   if (!stats) {
-    return <div className="text-center py-12">Loading...</div>;
+    return (
+      <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--ink-muted)', fontSize: '11px', letterSpacing: '0.12em' }}>
+        Loading...
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-8">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-slate-900">Overview</h1>
-        <p className="text-slate-600 mt-2">
-          Capture, analyze, and prioritize customer feedback from sales calls
-        </p>
+        <h1 className="page-title">Overview</h1>
+        <p className="page-subtitle">Revenue-weighted product intelligence · live signals</p>
       </div>
 
       {/* KPI Cards */}
@@ -119,94 +113,120 @@ export default async function DashboardPage() {
       />
 
       {/* Two-column layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
         {/* Recent feedback */}
-        <div className="card">
-          <h2 className="text-lg font-semibold text-slate-900 mb-4">Recent Feedback</h2>
-          <div className="space-y-4">
+        <div className="card" style={{ padding: '1.4rem 1.6rem' }}>
+          <div style={{
+            fontFamily: '"Cormorant Garamond", serif',
+            fontSize: '1rem',
+            fontWeight: 300,
+            color: 'var(--ink)',
+            letterSpacing: '0.06em',
+            marginBottom: '1.2rem',
+            paddingBottom: '0.75rem',
+            borderBottom: '1px solid var(--border)',
+          }}>
+            Recent Feedback
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             {stats.recentFeedback && stats.recentFeedback.length > 0 ? (
               stats.recentFeedback.map((feedback: any) => (
                 <div
                   key={feedback.id}
-                  className="p-3 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+                  style={{
+                    padding: '0.75rem 0',
+                    borderBottom: '1px solid var(--border)',
+                  }}
                 >
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <p className="font-medium text-slate-900 text-sm">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
+                    <span style={{ fontSize: '11px', color: 'var(--ink-dim)', letterSpacing: '0.04em' }}>
                       {(feedback.accounts as any)?.name || 'Unknown Account'}
-                    </p>
-                    <span className="text-xs text-slate-500">
+                    </span>
+                    <span style={{ fontSize: '9px', color: 'var(--ink-muted)', letterSpacing: '0.08em' }}>
                       {timeAgo(feedback.created_at)}
                     </span>
                   </div>
-                  <p className="text-sm text-slate-700 line-clamp-2">
+                  <p style={{ fontSize: '12px', color: 'var(--ink-muted)', lineHeight: 1.5, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
                     {feedback.raw_text}
                   </p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className="inline-block px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.4rem' }}>
+                    <span className="chip" style={{ color: 'var(--gold-dim)', borderColor: 'var(--gold-dim)' }}>
                       {feedback.category}
                     </span>
-                    <span className="text-xs text-slate-500">
+                    <span style={{ fontSize: '10px', color: 'var(--green)', fontFamily: '"DM Mono", monospace' }}>
                       {formatARR(feedback.revenue_weight)}
                     </span>
                   </div>
                 </div>
               ))
             ) : (
-              <div className="text-center py-8">
-                <p className="text-2xl mb-2">💬</p>
-                <p className="text-slate-700 font-medium text-sm mb-1">No feedback yet</p>
-                <p className="text-slate-500 text-xs mb-4">
-                  Submit your first piece of customer feedback to get started.
-                </p>
-                <a
-                  href="/dashboard/feedback"
-                  className="inline-block px-4 py-2 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90"
-                  style={{ backgroundColor: '#1565C0' }}
-                >
+              <div style={{ textAlign: 'center', padding: '2rem 0' }}>
+                <div style={{ fontSize: '11px', color: 'var(--ink-muted)', letterSpacing: '0.12em', marginBottom: '1rem' }}>No feedback yet</div>
+                <Link href="/dashboard/feedback" className="btn btn-primary" style={{ fontSize: '9px' }}>
                   Add Feedback
-                </a>
+                </Link>
               </div>
             )}
           </div>
         </div>
 
         {/* Top features */}
-        <div className="card">
-          <h2 className="text-lg font-semibold text-slate-900 mb-4">Top Features</h2>
-          <div className="space-y-4">
+        <div className="card" style={{ padding: '1.4rem 1.6rem' }}>
+          <div style={{
+            fontFamily: '"Cormorant Garamond", serif',
+            fontSize: '1rem',
+            fontWeight: 300,
+            color: 'var(--ink)',
+            letterSpacing: '0.06em',
+            marginBottom: '1.2rem',
+            paddingBottom: '0.75rem',
+            borderBottom: '1px solid var(--border)',
+          }}>
+            Top Features
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             {stats.topFeatures && stats.topFeatures.length > 0 ? (
-              stats.topFeatures.map((feature: any) => (
+              stats.topFeatures.map((feature: any, i: number) => (
                 <div
                   key={feature.id}
-                  className="p-3 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+                  style={{
+                    padding: '0.75rem 0',
+                    borderBottom: '1px solid var(--border)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    gap: '1rem',
+                  }}
                 >
-                  <p className="font-medium text-slate-900 text-sm mb-2">
-                    {feature.title}
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-slate-600">
-                      {feature.account_count} account{feature.account_count !== 1 ? 's' : ''}
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+                    <span style={{
+                      fontFamily: '"Cormorant Garamond", serif',
+                      fontSize: '1.1rem',
+                      color: i === 0 ? 'var(--gold)' : 'var(--border-bright)',
+                      fontStyle: 'italic',
+                      lineHeight: 1,
+                      minWidth: '1rem',
+                    }}>
+                      {i + 1}
                     </span>
-                    <span className="text-sm font-semibold text-sky-600">
-                      {formatARR(feature.total_revenue_weight)}
-                    </span>
+                    <div>
+                      <div style={{ fontSize: '12px', color: 'var(--ink-dim)', lineHeight: 1.4 }}>{feature.title}</div>
+                      <div style={{ fontSize: '9px', color: 'var(--ink-muted)', marginTop: '0.2rem', letterSpacing: '0.08em' }}>
+                        {feature.account_count} account{feature.account_count !== 1 ? 's' : ''}
+                      </div>
+                    </div>
                   </div>
+                  <span style={{ fontSize: '12px', color: 'var(--green)', fontFamily: '"DM Mono", monospace', whiteSpace: 'nowrap' }}>
+                    {formatARR(feature.total_revenue_weight)}
+                  </span>
                 </div>
               ))
             ) : (
-              <div className="text-center py-8">
-                <p className="text-2xl mb-2">🧠</p>
-                <p className="text-slate-700 font-medium text-sm mb-1">No features yet</p>
-                <p className="text-slate-500 text-xs mb-4">
-                  Features are automatically grouped from feedback by AI. Add feedback to get started.
-                </p>
-                <a
-                  href="/dashboard/feedback"
-                  className="inline-block px-4 py-2 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90"
-                  style={{ backgroundColor: '#1565C0' }}
-                >
+              <div style={{ textAlign: 'center', padding: '2rem 0' }}>
+                <div style={{ fontSize: '11px', color: 'var(--ink-muted)', letterSpacing: '0.12em', marginBottom: '1rem' }}>No features yet</div>
+                <Link href="/dashboard/feedback" className="btn btn-primary" style={{ fontSize: '9px' }}>
                   Add Feedback
-                </a>
+                </Link>
               </div>
             )}
           </div>
@@ -215,8 +235,17 @@ export default async function DashboardPage() {
 
       {/* Feature ranking chart */}
       {stats.topFeatures && stats.topFeatures.length > 0 && (
-        <div className="card">
-          <h2 className="text-lg font-semibold text-slate-900 mb-4">Feature Revenue Impact</h2>
+        <div className="card" style={{ padding: '1.4rem 1.6rem' }}>
+          <div style={{
+            fontFamily: '"Cormorant Garamond", serif',
+            fontSize: '1rem',
+            fontWeight: 300,
+            color: 'var(--ink)',
+            letterSpacing: '0.06em',
+            marginBottom: '1.2rem',
+          }}>
+            Feature Revenue Impact
+          </div>
           <FeatureRankingChart features={stats.topFeatures} />
         </div>
       )}

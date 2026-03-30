@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Zap } from 'lucide-react';
 import Link from 'next/link';
 
 export default function SignupPage() {
@@ -22,7 +21,7 @@ export default function SignupPage() {
       const supabase = createClient();
       const { error: signUpError } = await supabase.auth.signUp({
         email: email.trim(),
-        password: Math.random().toString(36).slice(2), // Random password (unused — magic link auth)
+        password: Math.random().toString(36).slice(2),
         options: {
           emailRedirectTo: `${window.location.origin}/callback`,
           data: {
@@ -43,46 +42,65 @@ export default function SignupPage() {
   };
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center px-4"
-      style={{ background: 'linear-gradient(135deg, #0D1B3E 0%, #1565C0 100%)' }}
-    >
-      <div className="w-full max-w-md">
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '2rem',
+      background: 'var(--bg)',
+    }}>
+      <div style={{ width: '100%', maxWidth: 400 }}>
+
         {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <Zap className="w-10 h-10" style={{ color: '#F0A500' }} />
-            <h1
-              className="text-3xl font-bold text-white"
-              style={{ fontFamily: 'Trebuchet MS, sans-serif' }}
-            >
-              Clairio
-            </h1>
+        <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+          <div style={{
+            fontFamily: '"Cormorant Garamond", serif',
+            fontSize: '2.8rem',
+            fontWeight: 300,
+            letterSpacing: '0.3em',
+            color: 'var(--ink)',
+            lineHeight: 1,
+          }}>
+            CL<span style={{ color: 'var(--gold)' }}>A</span>IRIO
           </div>
-          <p style={{ color: '#CADCFC' }} className="font-medium">
-            Revenue-weighted product intelligence
-          </p>
+          <div style={{
+            fontSize: '9px',
+            letterSpacing: '0.2em',
+            textTransform: 'uppercase',
+            color: 'var(--ink-muted)',
+            marginTop: '0.5rem',
+          }}>
+            Revenue-Weighted Product Intelligence
+          </div>
         </div>
 
         {/* Card */}
-        <div
-          className="rounded-xl shadow-2xl p-8 border"
-          style={{ backgroundColor: '#0A1628', borderColor: '#1565C0' }}
-        >
+        <div style={{
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border)',
+          borderTop: '2px solid var(--gold-dim)',
+          padding: '2.2rem',
+        }}>
           {!submitted ? (
             <>
-              <h2
-                className="text-xl font-semibold text-white mb-6"
-                style={{ fontFamily: 'Trebuchet MS, sans-serif' }}
-              >
-                Create your account
-              </h2>
+              <div style={{
+                fontFamily: '"Cormorant Garamond", serif',
+                fontSize: '1.2rem',
+                fontWeight: 300,
+                color: 'var(--ink)',
+                letterSpacing: '0.08em',
+                marginBottom: '0.25rem',
+              }}>
+                Create account
+              </div>
+              <div style={{ fontSize: '9px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: '1.8rem' }}>
+                Passwordless · Magic link sent to your email
+              </div>
 
-              <form onSubmit={handleSignUp} className="space-y-4">
+              <form onSubmit={handleSignUp} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <div>
-                  <label htmlFor="fullName" className="block text-sm font-medium text-white mb-1">
-                    Full name
-                  </label>
+                  <label className="label" htmlFor="fullName">Full name</label>
                   <input
                     id="fullName"
                     type="text"
@@ -90,15 +108,13 @@ export default function SignupPage() {
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="Jane Doe"
                     required
-                    className="w-full px-4 py-2 rounded-lg border text-white placeholder-slate-400 focus:outline-none focus:ring-2"
-                    style={{ backgroundColor: '#0D1B3E', borderColor: '#1565C0' }}
+                    className="input"
+                    autoFocus
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-white mb-1">
-                    Work email
-                  </label>
+                  <label className="label" htmlFor="email">Work email</label>
                   <input
                     id="email"
                     type="email"
@@ -106,21 +122,17 @@ export default function SignupPage() {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@company.com"
                     required
-                    className="w-full px-4 py-2 rounded-lg border text-white placeholder-slate-400 focus:outline-none focus:ring-2"
-                    style={{ backgroundColor: '#0D1B3E', borderColor: '#1565C0' }}
+                    className="input"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="role" className="block text-sm font-medium text-white mb-1">
-                    Your role
-                  </label>
+                  <label className="label" htmlFor="role">Your role</label>
                   <select
                     id="role"
                     value={role}
                     onChange={(e) => setRole(e.target.value as 'sales_rep' | 'product_manager')}
-                    className="w-full px-4 py-2 rounded-lg border text-white focus:outline-none focus:ring-2"
-                    style={{ backgroundColor: '#0D1B3E', borderColor: '#1565C0' }}
+                    className="input"
                   >
                     <option value="sales_rep">Sales Representative</option>
                     <option value="product_manager">Product Manager</option>
@@ -128,10 +140,7 @@ export default function SignupPage() {
                 </div>
 
                 {error && (
-                  <div
-                    className="p-3 rounded-lg text-sm"
-                    style={{ backgroundColor: '#3B0000', color: '#FCA5A5' }}
-                  >
+                  <div style={{ padding: '0.6rem 0.8rem', border: '1px solid #5a2020', background: '#120808', fontSize: '10px', color: '#ee8870', letterSpacing: '0.06em' }}>
                     {error}
                   </div>
                 )}
@@ -139,54 +148,55 @@ export default function SignupPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-2 px-4 rounded-lg font-semibold text-white transition-opacity disabled:opacity-50"
-                  style={{ backgroundColor: '#1565C0', fontFamily: 'Trebuchet MS, sans-serif' }}
+                  className="btn btn-primary"
+                  style={{ width: '100%', marginTop: '0.3rem', padding: '0.75rem' }}
                 >
-                  {loading ? 'Creating account...' : 'Create Account'}
+                  {loading ? 'Creating account...' : 'Create Account →'}
                 </button>
               </form>
 
-              <p className="text-center text-sm mt-6" style={{ color: '#7A9CC0' }}>
+              <div style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '10px', color: 'var(--ink-muted)' }}>
                 Already have an account?{' '}
-                <Link
-                  href="/login"
-                  className="font-medium hover:underline"
-                  style={{ color: '#1E88E5' }}
-                >
-                  Sign in
-                </Link>
-              </p>
+                <Link href="/login" style={{ color: 'var(--gold-dim)' }}>Sign in</Link>
+              </div>
             </>
           ) : (
-            <div className="text-center">
-              <div
-                className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4"
-                style={{ backgroundColor: '#00897B' }}
-              >
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <h3
-                className="text-lg font-semibold text-white mb-2"
-                style={{ fontFamily: 'Trebuchet MS, sans-serif' }}
-              >
+            <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+              <div style={{
+                fontFamily: '"Cormorant Garamond", serif',
+                fontSize: '2.5rem',
+                color: 'var(--gold)',
+                fontStyle: 'italic',
+                marginBottom: '1rem',
+              }}>✓</div>
+              <div style={{
+                fontFamily: '"Cormorant Garamond", serif',
+                fontSize: '1.1rem',
+                fontWeight: 300,
+                color: 'var(--ink)',
+                letterSpacing: '0.08em',
+                marginBottom: '0.5rem',
+              }}>
                 Check your email
-              </h3>
-              <p className="text-sm mb-4" style={{ color: '#7A9CC0' }}>
-                We sent a confirmation link to{' '}
-                <span className="font-medium text-white">{email}</span>
-              </p>
-              <p className="text-xs" style={{ color: '#7A9CC0' }}>
-                Click the link to confirm your account and sign in. It expires in 24 hours.
-              </p>
+              </div>
+              <div style={{ fontSize: '10px', color: 'var(--ink-muted)', lineHeight: 1.8 }}>
+                Confirmation link sent to <span style={{ color: 'var(--ink-dim)' }}>{email}</span><br />
+                Click the link to activate your account. Expires in 24 hours.
+              </div>
+              <button
+                onClick={() => { setSubmitted(false); setEmail(''); }}
+                className="btn"
+                style={{ marginTop: '1.5rem' }}
+              >
+                Try a different email
+              </button>
             </div>
           )}
         </div>
 
-        <p className="text-center text-xs mt-6" style={{ color: '#7A9CC0' }}>
+        <div style={{ textAlign: 'center', marginTop: '1.2rem', fontSize: '9px', letterSpacing: '0.12em', color: 'var(--ink-muted)' }}>
           Secured by Supabase · Passwordless sign-in
-        </p>
+        </div>
       </div>
     </div>
   );

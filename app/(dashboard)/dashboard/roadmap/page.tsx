@@ -31,7 +31,6 @@ async function getFeatures(): Promise<Partial<Record<RoadmapStatus, any[]>>> {
     .eq('org_id', profile.org_id)
     .order('total_revenue_weight', { ascending: false });
 
-  // Group by status
   const grouped: Record<RoadmapStatus, any[]> = {
     backlog: [],
     planned: [],
@@ -47,78 +46,99 @@ async function getFeatures(): Promise<Partial<Record<RoadmapStatus, any[]>>> {
   return grouped;
 }
 
+const STATUS_META: Record<RoadmapStatus, { label: string; color: string }> = {
+  backlog:     { label: 'Backlog',      color: 'var(--border-bright)' },
+  planned:     { label: 'Planned',      color: '#3a7bd5' },
+  in_progress: { label: 'In Progress',  color: 'var(--gold-dim)' },
+  shipped:     { label: 'Shipped',      color: 'var(--green)' },
+};
+
 export default async function RoadmapPage() {
   const grouped = await getFeatures();
 
-  const columns: { status: RoadmapStatus; label: string; color: string }[] = [
-    { status: 'backlog', label: 'Backlog', color: 'bg-slate-100' },
-    { status: 'planned', label: 'Planned', color: 'bg-blue-100' },
-    { status: 'in_progress', label: 'In Progress', color: 'bg-yellow-100' },
-    { status: 'shipped', label: 'Shipped', color: 'bg-green-100' },
-  ];
+  const columns: RoadmapStatus[] = ['backlog', 'planned', 'in_progress', 'shipped'];
 
   return (
-    <div className="space-y-8">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-slate-900">Product Roadmap</h1>
-        <p className="text-slate-600 mt-2">
-          View features by status. Drag to move between columns (coming soon).
-        </p>
+        <h1 className="page-title">Product Roadmap</h1>
+        <p className="page-subtitle">Features by status · revenue-ranked within each column</p>
       </div>
 
       {/* Kanban board */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {columns.map((column) => (
-          <div key={column.status} className="space-y-4">
-            {/* Column header */}
-            <div className={`p-3 rounded-lg ${column.color}`}>
-              <h2 className="font-semibold text-slate-900">
-                {column.label}{' '}
-                <span className="text-sm font-normal text-slate-600">
-                  ({(grouped[column.status] || []).length})
-                </span>
-              </h2>
-            </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.2rem' }}>
+        {columns.map((status) => {
+          const meta = STATUS_META[status];
+          const items = grouped[status] || [];
+          const colARR = items.reduce((s: number, f: any) => s + f.total_revenue_weight, 0);
 
-            {/* Cards */}
-            <div className="space-y-3">
-              {(grouped[column.status] || []).length > 0 ? (
-                (grouped[column.status] || []).map((feature) => (
-                  <div
-                    key={feature.id}
-                    className="card bg-white hover:shadow-md transition-shadow cursor-move"
-                  >
-                    <p className="font-semibold text-slate-900 line-clamp-2 mb-2">
-                      {feature.title}
-                    </p>
-                    <div className="flex items-center justify-between gap-2 text-xs">
-                      <span className="text-sky-600 font-semibold">
-                        {formatARR(feature.total_revenue_weight)}
-                      </span>
-                      <span className="text-slate-500">
-                        {feature.account_count} account{feature.account_count !== 1 ? 's' : ''}
-                      </span>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-8">
-                  <p className="text-slate-500 text-sm font-medium mb-1">No features</p>
-                  {column.status === 'backlog' && (
-                    <a
-                      href="/dashboard/feedback"
-                      className="text-xs font-medium hover:underline"
-                      style={{ color: '#1E88E5' }}
-                    >
-                      Add feedback →
-                    </a>
-                  )}
+          return (
+            <div key={status}>
+              {/* Column header */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '0.6rem 0.8rem',
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border)',
+                borderTop: `2px solid ${meta.color}`,
+                marginBottom: '0.75rem',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: meta.color }} />
+                  <span style={{ fontSize: '9px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-muted)' }}>
+                    {meta.label}
+                  </span>
+                </div>
+                <span style={{ fontSize: '9px', color: 'var(--ink-muted)', letterSpacing: '0.08em' }}>
+                  {items.length}
+                </span>
+              </div>
+
+              {colARR > 0 && (
+                <div style={{ fontSize: '9px', color: 'var(--green)', letterSpacing: '0.1em', marginBottom: '0.75rem', paddingLeft: '0.8rem' }}>
+                  {formatARR(colARR)} ARR
                 </div>
               )}
+
+              {/* Cards */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {items.length > 0 ? (
+                  items.map((feature: any) => (
+                    <div
+                      key={feature.id}
+                      style={{
+                        background: 'var(--bg-card)',
+                        border: '1px solid var(--border)',
+                        padding: '0.85rem 0.9rem',
+                      }}
+                    >
+                      <p style={{ fontSize: '12px', color: 'var(--ink-dim)', lineHeight: 1.4, marginBottom: '0.5rem' }}>
+                        {feature.title}
+                      </p>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '10px', color: 'var(--green)', fontFamily: '"DM Mono", monospace' }}>
+                          {formatARR(feature.total_revenue_weight)}
+                        </span>
+                        <span style={{ fontSize: '9px', color: 'var(--ink-muted)', letterSpacing: '0.06em' }}>
+                          {feature.account_count} acct{feature.account_count !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ padding: '1.5rem 0', textAlign: 'center' }}>
+                    <span style={{ fontSize: '9px', color: 'var(--border-bright)', letterSpacing: '0.12em' }}>
+                      {status === 'backlog' ? '—' : 'empty'}
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

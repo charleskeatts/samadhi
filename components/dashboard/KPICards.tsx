@@ -4,7 +4,6 @@
  */
 
 import { formatARR } from '@/lib/utils';
-import { DollarSign, MessageSquare, Layers, Zap } from 'lucide-react';
 import { KPICardsProps } from '@/types';
 
 export default function KPICards({
@@ -17,55 +16,54 @@ export default function KPICards({
     {
       label: 'ARR at Stake',
       value: formatARR(totalARR),
-      icon: DollarSign,
-      color: 'bg-green-100',
-      textColor: 'text-green-700',
-      iconColor: 'text-green-600',
+      accent: 'var(--green)',
     },
     {
       label: 'Total Feedback',
       value: feedbackCount.toLocaleString(),
-      icon: MessageSquare,
-      color: 'bg-blue-100',
-      textColor: 'text-blue-700',
-      iconColor: 'text-blue-600',
+      accent: 'var(--gold)',
     },
     {
       label: 'Features Found',
       value: featureCount.toLocaleString(),
-      icon: Layers,
-      color: 'bg-purple-100',
-      textColor: 'text-purple-700',
-      iconColor: 'text-purple-600',
+      accent: 'var(--gold-dim)',
     },
     {
       label: 'Avg Urgency',
       value: `${avgUrgency}/10`,
-      icon: Zap,
-      color: 'bg-amber-100',
-      textColor: 'text-amber-700',
-      iconColor: 'text-amber-600',
+      accent: avgUrgency >= 7 ? 'var(--red)' : avgUrgency >= 5 ? 'var(--orange)' : 'var(--border-bright)',
     },
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      {cards.map((card) => {
-        const Icon = card.icon;
-        return (
-          <div key={card.label} className="card">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm text-slate-600 mb-2">{card.label}</p>
-                <p className="text-2xl font-bold text-slate-900">{card.value}</p>
-              </div>
-              <div className={`p-3 rounded-lg ${card.color}`}>
-                <Icon className={`w-5 h-5 ${card.iconColor}`} />
-              </div>
-            </div>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
+      {cards.map((card) => (
+        <div
+          key={card.label}
+          className="card"
+          style={{ borderTop: `2px solid ${card.accent}`, borderLeft: 'none', padding: '1rem 1.2rem' }}
+        >
+          <div style={{
+            fontSize: '8px',
+            letterSpacing: '0.18em',
+            textTransform: 'uppercase',
+            color: 'var(--ink-muted)',
+            marginBottom: '0.6rem',
+          }}>
+            {card.label}
           </div>
-        );
-      })}
+          <div style={{
+            fontFamily: '"Cormorant Garamond", serif',
+            fontSize: '2rem',
+            fontWeight: 300,
+            color: card.accent,
+            lineHeight: 1,
+            letterSpacing: '-0.02em',
+          }}>
+            {card.value}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

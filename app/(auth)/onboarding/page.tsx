@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Zap } from 'lucide-react';
 
 export default function OnboardingPage() {
   const [companyName, setCompanyName] = useState('');
@@ -44,54 +43,64 @@ export default function OnboardingPage() {
     }
   };
 
-  const inputStyle = {
-    backgroundColor: '#0D1B3E',
-    borderColor: '#1565C0',
-    fontFamily: 'Calibri, sans-serif',
-  };
-
   return (
-    <div
-      className="min-h-screen flex items-center justify-center px-4"
-      style={{ background: 'linear-gradient(135deg, #0D1B3E 0%, #1565C0 100%)' }}
-    >
-      <div className="w-full max-w-md">
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '2rem',
+      background: 'var(--bg)',
+    }}>
+      <div style={{ width: '100%', maxWidth: 400 }}>
+
         {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <Zap className="w-10 h-10" style={{ color: '#F0A500' }} />
-            <h1
-              className="text-3xl font-bold text-white"
-              style={{ fontFamily: 'Trebuchet MS, sans-serif' }}
-            >
-              Clairio
-            </h1>
+        <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+          <div style={{
+            fontFamily: '"Cormorant Garamond", serif',
+            fontSize: '2.8rem',
+            fontWeight: 300,
+            letterSpacing: '0.3em',
+            color: 'var(--ink)',
+            lineHeight: 1,
+          }}>
+            CL<span style={{ color: 'var(--gold)' }}>A</span>IRIO
           </div>
-          <p style={{ color: '#CADCFC' }} className="font-medium">
+          <div style={{
+            fontSize: '9px',
+            letterSpacing: '0.2em',
+            textTransform: 'uppercase',
+            color: 'var(--ink-muted)',
+            marginTop: '0.5rem',
+          }}>
             One last step — set up your workspace
-          </p>
+          </div>
         </div>
 
         {/* Card */}
-        <div
-          className="rounded-xl shadow-2xl p-8 border"
-          style={{ backgroundColor: '#0A1628', borderColor: '#1565C0' }}
-        >
-          <h2
-            className="text-xl font-semibold text-white mb-2"
-            style={{ fontFamily: 'Trebuchet MS, sans-serif' }}
-          >
+        <div style={{
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border)',
+          borderTop: '2px solid var(--gold-dim)',
+          padding: '2.2rem',
+        }}>
+          <div style={{
+            fontFamily: '"Cormorant Garamond", serif',
+            fontSize: '1.2rem',
+            fontWeight: 300,
+            color: 'var(--ink)',
+            letterSpacing: '0.08em',
+            marginBottom: '0.25rem',
+          }}>
             Set up your workspace
-          </h2>
-          <p className="text-sm mb-6" style={{ color: '#7A9CC0' }}>
-            Tell us a bit about yourself and your company.
-          </p>
+          </div>
+          <div style={{ fontSize: '9px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: '1.8rem' }}>
+            Tell us about yourself and your company
+          </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div>
-              <label htmlFor="fullName" className="block text-sm font-medium text-white mb-1">
-                Your name
-              </label>
+              <label className="label" htmlFor="fullName">Your name</label>
               <input
                 id="fullName"
                 type="text"
@@ -100,21 +109,17 @@ export default function OnboardingPage() {
                 placeholder="Jane Smith"
                 required
                 autoFocus
-                className="w-full px-4 py-2 rounded-lg border text-white placeholder-slate-400 focus:outline-none focus:ring-2"
-                style={inputStyle}
+                className="input"
               />
             </div>
 
             <div>
-              <label htmlFor="role" className="block text-sm font-medium text-white mb-1">
-                Your role
-              </label>
+              <label className="label" htmlFor="role">Your role</label>
               <select
                 id="role"
                 value={role}
                 onChange={(e) => setRole(e.target.value as typeof role)}
-                className="w-full px-4 py-2 rounded-lg border text-white focus:outline-none focus:ring-2"
-                style={inputStyle}
+                className="input"
               >
                 <option value="sales_rep">Sales Representative</option>
                 <option value="product_manager">Product Manager</option>
@@ -123,9 +128,7 @@ export default function OnboardingPage() {
             </div>
 
             <div>
-              <label htmlFor="companyName" className="block text-sm font-medium text-white mb-1">
-                Company name
-              </label>
+              <label className="label" htmlFor="companyName">Company name</label>
               <input
                 id="companyName"
                 type="text"
@@ -133,16 +136,12 @@ export default function OnboardingPage() {
                 onChange={(e) => setCompanyName(e.target.value)}
                 placeholder="Acme Inc."
                 required
-                className="w-full px-4 py-2 rounded-lg border text-white placeholder-slate-400 focus:outline-none focus:ring-2"
-                style={inputStyle}
+                className="input"
               />
             </div>
 
             {error && (
-              <div
-                className="p-3 rounded-lg text-sm"
-                style={{ backgroundColor: '#3B0000', color: '#FCA5A5' }}
-              >
+              <div style={{ padding: '0.6rem 0.8rem', border: '1px solid #5a2020', background: '#120808', fontSize: '10px', color: '#ee8870', letterSpacing: '0.06em' }}>
                 {error}
               </div>
             )}
@@ -150,13 +149,10 @@ export default function OnboardingPage() {
             <button
               type="submit"
               disabled={loading || !companyName.trim() || !fullName.trim()}
-              className="w-full py-2 px-4 rounded-lg font-semibold text-white transition-opacity disabled:opacity-50"
-              style={{
-                backgroundColor: '#1565C0',
-                fontFamily: 'Trebuchet MS, sans-serif',
-              }}
+              className="btn btn-primary"
+              style={{ width: '100%', marginTop: '0.3rem', padding: '0.75rem' }}
             >
-              {loading ? 'Setting up your workspace...' : 'Get Started →'}
+              {loading ? 'Setting up workspace...' : 'Get Started →'}
             </button>
           </form>
         </div>

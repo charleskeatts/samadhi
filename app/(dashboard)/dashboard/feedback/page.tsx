@@ -11,7 +11,6 @@ import FeedbackTable from '@/components/feedback/FeedbackTable';
 async function getFeedback() {
   const supabase = await createClient();
 
-  // Get current user's org
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -25,7 +24,6 @@ async function getFeedback() {
 
   if (!profile) return [];
 
-  // Get all feedback for this org
   const { data: feedback } = await supabase
     .from('feedback')
     .select(
@@ -56,13 +54,11 @@ export default async function FeedbackPage() {
   const feedback = await getFeedback();
 
   return (
-    <div className="space-y-8">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-slate-900">Feedback</h1>
-        <p className="text-slate-600 mt-2">
-          All customer feedback captured from sales calls, classified by AI
-        </p>
+        <h1 className="page-title">Feedback</h1>
+        <p className="page-subtitle">Customer signals captured from sales calls · AI classified</p>
       </div>
 
       {/* Table */}

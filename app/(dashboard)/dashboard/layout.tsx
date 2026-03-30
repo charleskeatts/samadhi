@@ -1,33 +1,22 @@
-/**
- * Dashboard layout
- * Provides sidebar navigation and top header for all dashboard pages
- */
-
 'use client';
 
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, LogOut, Zap } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import { cn } from '@/lib/utils';
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+const NAV = [
+  { href: '/dashboard',           label: 'Overview',  abbr: 'OV' },
+  { href: '/dashboard/feedback',  label: 'Feedback',  abbr: 'FB' },
+  { href: '/dashboard/insights',  label: 'Insights',  abbr: 'AI' },
+  { href: '/dashboard/backlog',   label: 'Backlog',   abbr: 'BL' },
+  { href: '/dashboard/roadmap',   label: 'Roadmap',   abbr: 'RM' },
+  { href: '/dashboard/settings',  label: 'Settings',  abbr: 'ST' },
+];
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
   const pathname = usePathname();
-
-  const navItems = [
-    { href: '/dashboard', label: 'Overview', icon: '📊' },
-    { href: '/dashboard/feedback', label: 'Feedback', icon: '💬' },
-    { href: '/dashboard/insights', label: 'Insights', icon: '🧠' },
-    { href: '/dashboard/backlog', label: 'Backlog', icon: '🎯' },
-    { href: '/dashboard/roadmap', label: 'Roadmap', icon: '🗺️' },
-    { href: '/dashboard/settings', label: 'Settings', icon: '⚙️' },
-  ];
 
   const handleSignOut = async () => {
     const supabase = createClient();
@@ -36,113 +25,172 @@ export default function DashboardLayout({
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Mobile header */}
-      <div className="md:hidden bg-white border-b border-slate-200 p-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Zap className="w-6 h-6" style={{ color: '#F0A500' }} />
-          <span
-            className="font-bold text-slate-900"
-            style={{ fontFamily: 'Trebuchet MS, sans-serif' }}
-          >
-            Clairio
-          </span>
+    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg)' }}>
+
+      {/* ── SIDEBAR ── */}
+      <aside style={{
+        width: 220,
+        minWidth: 220,
+        background: '#060504',
+        borderRight: '1px solid var(--border)',
+        display: 'flex',
+        flexDirection: 'column',
+        flexShrink: 0,
+        position: 'sticky',
+        top: 0,
+        height: '100vh',
+      }}>
+
+        {/* Logo */}
+        <div style={{
+          padding: '1.8rem 1.4rem 1.4rem',
+          borderBottom: '1px solid var(--border)',
+        }}>
+          <div style={{
+            fontFamily: '"Cormorant Garamond", serif',
+            fontSize: '1.7rem',
+            fontWeight: 300,
+            letterSpacing: '0.22em',
+            color: 'var(--ink)',
+            lineHeight: 1,
+          }}>
+            CL<span style={{ color: 'var(--gold)' }}>A</span>IRIO
+          </div>
+          <div style={{
+            fontSize: '8px',
+            letterSpacing: '0.2em',
+            textTransform: 'uppercase',
+            color: 'var(--ink-muted)',
+            marginTop: '0.3rem',
+          }}>
+            Revenue Intelligence
+          </div>
         </div>
+
+        {/* Nav */}
+        <nav style={{ flex: 1, padding: '1rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+          {NAV.map((item) => {
+            const active = pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  padding: '0.55rem 0.7rem',
+                  fontSize: '10px',
+                  letterSpacing: '0.16em',
+                  textTransform: 'uppercase',
+                  color: active ? 'var(--gold)' : 'var(--ink-muted)',
+                  background: active ? 'rgba(232,184,75,0.07)' : 'transparent',
+                  borderLeft: active ? '2px solid var(--gold)' : '2px solid transparent',
+                  transition: 'all 0.15s',
+                  textDecoration: 'none',
+                }}
+                onMouseEnter={(e) => {
+                  if (!active) {
+                    (e.currentTarget as HTMLElement).style.color = 'var(--ink-dim)';
+                    (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!active) {
+                    (e.currentTarget as HTMLElement).style.color = 'var(--ink-muted)';
+                    (e.currentTarget as HTMLElement).style.background = 'transparent';
+                  }
+                }}
+              >
+                <span style={{
+                  fontFamily: '"Cormorant Garamond", serif',
+                  fontSize: '11px',
+                  fontStyle: 'italic',
+                  color: active ? 'var(--gold-dim)' : 'var(--border-bright)',
+                  minWidth: '1.4rem',
+                }}>
+                  {item.abbr}
+                </span>
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Sign out */}
+        <div style={{ padding: '0.9rem 0.75rem', borderTop: '1px solid var(--border)' }}>
+          <button
+            onClick={handleSignOut}
+            style={{
+              width: '100%',
+              background: 'none',
+              border: '1px solid var(--border)',
+              color: 'var(--ink-muted)',
+              fontFamily: '"DM Mono", monospace',
+              fontSize: '9px',
+              letterSpacing: '0.18em',
+              textTransform: 'uppercase',
+              padding: '0.5rem',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLElement).style.borderColor = 'var(--orange-dim)';
+              (e.currentTarget as HTMLElement).style.color = 'var(--orange)';
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)';
+              (e.currentTarget as HTMLElement).style.color = 'var(--ink-muted)';
+            }}
+          >
+            Sign Out
+          </button>
+        </div>
+      </aside>
+
+      {/* ── MOBILE HEADER ── */}
+      <div style={{
+        display: 'none',
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 50,
+        background: '#060504',
+        borderBottom: '1px solid var(--border)',
+        padding: '0.9rem 1.2rem',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+      }} className="mobile-hdr">
+        <span style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: '1.3rem', fontWeight: 300, letterSpacing: '0.22em', color: 'var(--ink)' }}>
+          CL<span style={{ color: 'var(--gold)' }}>A</span>IRIO
+        </span>
         <button
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="p-2 hover:bg-slate-100 rounded-lg"
+          onClick={() => setOpen(!open)}
+          style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--ink-muted)', padding: '0.3rem 0.6rem', cursor: 'pointer', fontSize: '11px' }}
         >
-          {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          {open ? '✕' : '☰'}
         </button>
       </div>
 
-      <div className="flex">
-        {/* Sidebar */}
-        <aside
-          className={cn(
-            'fixed md:static inset-0 z-40 w-64 text-white transform transition-transform duration-200 ease-in-out md:transform-none',
-            sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-          )}
-          style={{ backgroundColor: '#0D1B3E' }}
-        >
-          <div className="h-full flex flex-col">
-            {/* Logo */}
-            <div
-              className="hidden md:flex items-center gap-2 px-6 py-8 border-b"
-              style={{ borderColor: '#1565C0' }}
-            >
-              <Zap className="w-6 h-6" style={{ color: '#F0A500' }} />
-              <span
-                className="font-bold text-lg text-white"
-                style={{ fontFamily: 'Trebuchet MS, sans-serif' }}
-              >
-                Clairio
-              </span>
-            </div>
-
-            {/* Navigation */}
-            <nav className="flex-1 px-4 py-6 space-y-2">
-              {navItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setSidebarOpen(false)}
-                  className="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors"
-                  style={
-                    pathname === item.href
-                      ? { backgroundColor: '#1565C0', color: '#FFFFFF' }
-                      : { color: '#CADCFC' }
-                  }
-                  onMouseEnter={(e) => {
-                    if (pathname !== item.href) {
-                      (e.currentTarget as HTMLElement).style.backgroundColor = '#1E3A6E';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (pathname !== item.href) {
-                      (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
-                    }
-                  }}
-                >
-                  <span className="text-lg">{item.icon}</span>
-                  <span className="font-medium">{item.label}</span>
-                </Link>
-              ))}
-            </nav>
-
-            {/* Sign out button */}
-            <div className="p-4 border-t" style={{ borderColor: '#1565C0' }}>
-              <button
-                onClick={handleSignOut}
-                className="w-full flex items-center gap-2 px-4 py-2 rounded-lg transition-colors"
-                style={{ color: '#CADCFC' }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.backgroundColor = '#1E3A6E';
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
-                }}
-              >
-                <LogOut className="w-4 h-4" />
-                <span>Sign out</span>
-              </button>
-            </div>
-          </div>
-        </aside>
-
-        {/* Overlay for mobile */}
-        {sidebarOpen && (
-          <div
-            className="fixed inset-0 z-30 bg-black/50 md:hidden"
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
-
-        {/* Main content */}
-        <main className="flex-1">
-          <div className="p-8">{children}</div>
-        </main>
-      </div>
+      {/* ── MAIN ── */}
+      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+        <div style={{ flex: 1, padding: '2.5rem 2.5rem 3rem' }}>
+          {children}
+        </div>
+        <footer style={{
+          padding: '0.7rem 2.5rem',
+          borderTop: '1px solid var(--border)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          fontSize: '9px',
+          letterSpacing: '0.12em',
+          color: 'var(--ink-muted)',
+        }}>
+          <span>Clairio · Revenue-Weighted Product Intelligence</span>
+          <span style={{ fontFamily: '"Cormorant Garamond", serif', fontStyle: 'italic' }}>Samadi Consulting LLC</span>
+        </footer>
+      </main>
     </div>
   );
 }

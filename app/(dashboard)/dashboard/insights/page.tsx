@@ -9,7 +9,6 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { FeatureRequest } from '@/types';
 import { formatARR } from '@/lib/utils';
-import { Zap } from 'lucide-react';
 
 export default function InsightsPage() {
   const [features, setFeatures] = useState<FeatureRequest[]>([]);
@@ -17,6 +16,7 @@ export default function InsightsPage() {
   const [selectedFeature, setSelectedFeature] = useState<FeatureRequest | null>(null);
   const [generatingBrief, setGeneratingBrief] = useState<string | null>(null);
   const [briefError, setBriefError] = useState<string | null>(null);
+
   useEffect(() => {
     const supabase = createClient();
     const fetchFeatures = async () => {
@@ -68,90 +68,121 @@ export default function InsightsPage() {
   };
 
   if (loading) {
-    return <div className="text-center py-12">Loading insights...</div>;
+    return (
+      <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--ink-muted)', fontSize: '11px', letterSpacing: '0.12em' }}>
+        Loading insights...
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-8">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-slate-900">AI Insights</h1>
-        <p className="text-slate-600 mt-2">
-          AI-consolidated feature requests ranked by revenue impact
-        </p>
+        <h1 className="page-title">AI Insights</h1>
+        <p className="page-subtitle">Feature requests consolidated and ranked by revenue impact</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1.5rem' }}>
         {/* Features list */}
-        <div className="lg:col-span-1">
-          <div className="card p-0 overflow-hidden">
-            <div className="p-4 border-b border-slate-200 bg-slate-50">
-              <h2 className="font-semibold text-slate-900">
-                {features.length} Features
-              </h2>
-            </div>
-            <div className="max-h-96 overflow-y-auto">
-              {features.length > 0 ? (
-                features.map((feature) => (
-                  <button
-                    key={feature.id}
-                    onClick={() => setSelectedFeature(feature)}
-                    className={`w-full text-left p-4 border-b border-slate-200 hover:bg-slate-50 transition-colors ${
-                      selectedFeature?.id === feature.id ? 'bg-sky-50' : ''
-                    }`}
-                  >
-                    <p className="font-medium text-sm text-slate-900 line-clamp-2">
-                      {feature.title}
-                    </p>
-                    <div className="flex items-center gap-2 mt-2 text-xs">
-                      <span className="text-sky-600 font-semibold">
-                        {formatARR(feature.total_revenue_weight)}
-                      </span>
-                      <span className="text-slate-500">
-                        {feature.account_count} account{feature.account_count !== 1 ? 's' : ''}
-                      </span>
-                    </div>
-                  </button>
-                ))
-              ) : (
-                <div className="p-6 text-center">
-                  <p className="text-2xl mb-2">🧠</p>
-                  <p className="text-slate-700 font-medium text-sm mb-1">No features yet</p>
-                  <p className="text-slate-500 text-xs mb-4">
-                    AI consolidates feedback into features overnight. Add feedback first.
+        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderLeft: '2px solid var(--gold-dim)' }}>
+          <div style={{
+            padding: '0.85rem 1rem',
+            borderBottom: '1px solid var(--border)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}>
+            <span style={{ fontSize: '9px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-muted)' }}>
+              Features
+            </span>
+            <span style={{ fontSize: '9px', color: 'var(--border-bright)', letterSpacing: '0.08em' }}>
+              {features.length}
+            </span>
+          </div>
+          <div style={{ maxHeight: '28rem', overflowY: 'auto' }}>
+            {features.length > 0 ? (
+              features.map((feature) => (
+                <button
+                  key={feature.id}
+                  onClick={() => setSelectedFeature(feature)}
+                  style={{
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '0.85rem 1rem',
+                    borderBottom: '1px solid var(--border)',
+                    background: selectedFeature?.id === feature.id ? 'rgba(232,184,75,0.06)' : 'transparent',
+                    borderLeft: selectedFeature?.id === feature.id ? '2px solid var(--gold)' : '2px solid transparent',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (selectedFeature?.id !== feature.id) {
+                      (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.02)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (selectedFeature?.id !== feature.id) {
+                      (e.currentTarget as HTMLElement).style.background = 'transparent';
+                    }
+                  }}
+                >
+                  <p style={{ fontSize: '12px', color: 'var(--ink-dim)', lineHeight: 1.4, marginBottom: '0.35rem' }}>
+                    {feature.title}
                   </p>
-                  <a
-                    href="/dashboard/feedback"
-                    className="inline-block px-4 py-2 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90"
-                    style={{ backgroundColor: '#1565C0' }}
-                  >
-                    Add Feedback
-                  </a>
-                </div>
-              )}
-            </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <span style={{ fontSize: '10px', color: 'var(--green)', fontFamily: '"DM Mono", monospace' }}>
+                      {formatARR(feature.total_revenue_weight)}
+                    </span>
+                    <span style={{ fontSize: '9px', color: 'var(--ink-muted)', letterSpacing: '0.06em' }}>
+                      {feature.account_count} account{feature.account_count !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                </button>
+              ))
+            ) : (
+              <div style={{ padding: '2rem', textAlign: 'center' }}>
+                <p style={{ fontSize: '11px', color: 'var(--ink-muted)', letterSpacing: '0.12em', marginBottom: '1rem' }}>
+                  No features yet
+                </p>
+                <p style={{ fontSize: '10px', color: 'var(--border-bright)', lineHeight: 1.6, marginBottom: '1rem' }}>
+                  AI consolidates feedback into features overnight. Add feedback first.
+                </p>
+                <a href="/dashboard/feedback" className="btn btn-primary" style={{ fontSize: '9px' }}>
+                  Add Feedback
+                </a>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Feature detail */}
-        <div className="lg:col-span-2">
+        <div>
           {selectedFeature ? (
-            <div className="space-y-4">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div className="card">
-                <h2 className="text-2xl font-bold text-slate-900 mb-2">
+                <div style={{
+                  fontFamily: '"Cormorant Garamond", serif',
+                  fontSize: '1.3rem',
+                  fontWeight: 300,
+                  color: 'var(--ink)',
+                  letterSpacing: '0.04em',
+                  marginBottom: '0.75rem',
+                }}>
                   {selectedFeature.title}
-                </h2>
-                <div className="flex items-center gap-4 text-sm text-slate-600 mb-4">
-                  <span>{formatARR(selectedFeature.total_revenue_weight)} ARR</span>
-                  <span>
-                    {selectedFeature.account_count} account
-                    {selectedFeature.account_count !== 1 ? 's' : ''}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1.2rem', marginBottom: '1rem' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--green)', fontFamily: '"DM Mono", monospace' }}>
+                    {formatARR(selectedFeature.total_revenue_weight)} ARR
                   </span>
-                  <span className="px-2 py-1 rounded bg-slate-100 text-slate-700 capitalize">
+                  <span style={{ fontSize: '9px', color: 'var(--ink-muted)', letterSpacing: '0.08em' }}>
+                    {selectedFeature.account_count} account{selectedFeature.account_count !== 1 ? 's' : ''}
+                  </span>
+                  <span className="chip">
                     {selectedFeature.roadmap_status}
                   </span>
                 </div>
-                <p className="text-slate-700 whitespace-pre-wrap">
+                <p style={{ fontSize: '12px', color: 'var(--ink-muted)', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
                   {selectedFeature.description}
                 </p>
               </div>
@@ -159,27 +190,29 @@ export default function InsightsPage() {
               <button
                 onClick={() => handleGenerateBrief(selectedFeature.id)}
                 disabled={generatingBrief === selectedFeature.id}
-                className="w-full py-2 px-4 rounded-lg font-semibold text-white transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
-                style={{ backgroundColor: '#1565C0' }}
+                className="btn btn-primary"
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  opacity: generatingBrief === selectedFeature.id ? 0.5 : 1,
+                }}
               >
-                <Zap className="w-4 h-4" />
                 {generatingBrief === selectedFeature.id
-                  ? 'Generating...'
-                  : 'Generate Roadmap Brief'}
+                  ? 'Generating brief...'
+                  : 'Generate Roadmap Brief →'}
               </button>
 
               {briefError && (
-                <div
-                  className="p-3 rounded-lg text-sm"
-                  style={{ backgroundColor: '#3B0000', color: '#FCA5A5' }}
-                >
+                <div style={{ padding: '0.6rem 0.8rem', border: '1px solid #5a2020', background: '#120808', fontSize: '10px', color: '#ee8870', letterSpacing: '0.06em' }}>
                   {briefError}
                 </div>
               )}
             </div>
           ) : (
-            <div className="card text-center py-12 text-slate-500">
-              <p>Select a feature to view details</p>
+            <div className="card" style={{ textAlign: 'center', padding: '4rem 2rem' }}>
+              <div style={{ fontSize: '9px', color: 'var(--border-bright)', letterSpacing: '0.18em', textTransform: 'uppercase' }}>
+                Select a feature to view details
+              </div>
             </div>
           )}
         </div>
