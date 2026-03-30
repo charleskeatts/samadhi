@@ -7,6 +7,19 @@
 
 ---
 
+## Code Quality Rules (Anti-AI-Tell Guidelines)
+
+These rules apply to **all UI work** across every page and component:
+
+- **No emojis in UI.** Use icon libraries only (lucide-react is already installed). Emojis are an immediate AI tell.
+- **No filler copy.** Avoid phrases like "Get started", "No items yet", "Something went wrong" with no context. Write specific, product-aware microcopy.
+- **No generic placeholder states.** Empty states should be purposeful — explain what the user needs to do and why, not just that the list is empty.
+- **No rainbow badge colors.** Stick to the design system palette. Avoid using Tailwind's default blue/green/red/yellow for status chips without justification.
+- **No excessive shadows and rounded corners.** This codebase uses sharp rectangles. `border-radius` should be 0 or very small. No `shadow-xl` on everything.
+- **No commented-out code or `// TODO` left in production files.**
+
+---
+
 ## Commands
 
 ```bash
