@@ -3,6 +3,8 @@
  * Shows all feedback with filters and bulk actions
  */
 
+export const dynamic = 'force-dynamic';
+
 import { createClient } from '@/lib/supabase/server';
 import FeedbackTable from '@/components/feedback/FeedbackTable';
 

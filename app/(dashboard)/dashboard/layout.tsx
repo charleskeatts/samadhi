@@ -19,7 +19,6 @@ export default function DashboardLayout({
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
-  const supabase = createClient();
 
   const navItems = [
     { href: '/dashboard', label: 'Overview', icon: '📊' },
@@ -31,6 +30,7 @@ export default function DashboardLayout({
   ];
 
   const handleSignOut = async () => {
+    const supabase = createClient();
     await supabase.auth.signOut();
     window.location.href = '/login';
   };

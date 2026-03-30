@@ -3,6 +3,8 @@
  * Shows key metrics and recent activity
  */
 
+export const dynamic = 'force-dynamic';
+
 import { createClient } from '@/lib/supabase/server';
 import KPICards from '@/components/dashboard/KPICards';
 import FeatureRankingChart from '@/components/dashboard/FeatureRankingChart';

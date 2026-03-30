@@ -12,7 +12,6 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
-  const supabase = createClient();
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,6 +19,7 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
+      const supabase = createClient();
       const { error: signUpError } = await supabase.auth.signUp({
         email: email.trim(),
         password: Math.random().toString(36).slice(2), // Random password (unused — magic link auth)

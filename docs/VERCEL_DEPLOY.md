@@ -4,6 +4,18 @@ Follow these steps once. After this, every `git push` to `main` auto-deploys.
 
 ---
 
+## Step 0: Set up Supabase database
+
+Before deploying, run both migrations in your Supabase project's SQL Editor
+(Dashboard → SQL Editor → New query):
+
+1. Copy and run `supabase/migrations/001_initial.sql` — creates all tables, indexes, and RLS policies
+2. Copy and run `supabase/migrations/002_backlog_columns.sql` — adds `category` and `blocker_score` to feature_requests
+
+Run them **in order**. Each one only needs to be run once.
+
+---
+
 ## Step 1: Connect repo to Vercel
 
 1. Go to https://vercel.com → Log in (or sign up free)

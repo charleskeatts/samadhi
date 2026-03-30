@@ -3,6 +3,8 @@
  * Kanban-style view of features by status
  */
 
+export const dynamic = 'force-dynamic';
+
 import { createClient } from '@/lib/supabase/server';
 import { RoadmapStatus } from '@/types';
 import { formatARR } from '@/lib/utils';
