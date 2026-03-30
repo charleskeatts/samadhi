@@ -8,6 +8,7 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Profile, Organization } from '@/types';
+import type { Role } from '@/types';
 
 export default function SettingsPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -19,7 +20,7 @@ export default function SettingsPage() {
 
   // Editable fields
   const [fullName, setFullName] = useState('');
-  const [role, setRole] = useState('');
+  const [role, setRole] = useState<Role>('sales_rep');
 
   useEffect(() => {
     const supabase = createClient();
@@ -116,7 +117,7 @@ export default function SettingsPage() {
             <select
               id="role"
               value={role}
-              onChange={(e) => setRole(e.target.value)}
+              onChange={(e) => setRole(e.target.value as Role)}
               className="input"
             >
               <option value="sales_rep">Sales Representative</option>
