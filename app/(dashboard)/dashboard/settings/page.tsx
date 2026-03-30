@@ -13,6 +13,13 @@ export default function SettingsPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [org, setOrg] = useState<Organization | null>(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState('');
+
+  // Editable fields
+  const [fullName, setFullName] = useState('');
+  const [role, setRole] = useState('');
 
   useEffect(() => {
     const supabase = createClient();
@@ -31,6 +38,8 @@ export default function SettingsPage() {
 
         if (profileData) {
           setProfile(profileData);
+          setFullName(profileData.full_name || '');
+          setRole(profileData.role || 'sales_rep');
 
           const { data: orgData } = await supabase
             .from('organizations')
@@ -38,12 +47,10 @@ export default function SettingsPage() {
             .eq('id', profileData.org_id)
             .single();
 
-          if (orgData) {
-            setOrg(orgData);
-          }
+          if (orgData) setOrg(orgData);
         }
-      } catch (error) {
-        console.error('Error loading data:', error);
+      } catch (err) {
+        console.error('Error loading data:', err);
       } finally {
         setLoading(false);
       }
@@ -51,6 +58,31 @@ export default function SettingsPage() {
 
     loadData();
   }, []);
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setSaved(false);
+    setError('');
+
+    try {
+      const supabase = createClient();
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ full_name: fullName.trim(), role })
+        .eq('id', profile!.id);
+
+      if (updateError) throw updateError;
+
+      setProfile((prev) => prev ? { ...prev, full_name: fullName.trim(), role } : prev);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   if (loading) {
     return <div className="text-center py-12">Loading settings...</div>;
@@ -67,18 +99,49 @@ export default function SettingsPage() {
       {/* Profile section */}
       <div className="card">
         <h2 className="text-lg font-semibold text-slate-900 mb-6">Your Profile</h2>
-        <div className="space-y-4">
+        <form onSubmit={handleSave} className="space-y-4">
           <div>
-            <label className="label">Full Name</label>
-            <p className="text-slate-700">{profile?.full_name || 'Not set'}</p>
+            <label htmlFor="fullName" className="label">Full Name</label>
+            <input
+              id="fullName"
+              type="text"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="Your name"
+              className="input"
+            />
           </div>
           <div>
-            <label className="label">Role</label>
-            <p className="text-slate-700 capitalize">
-              {profile?.role === 'sales_rep' ? 'Sales Representative' : profile?.role}
-            </p>
+            <label htmlFor="role" className="label">Role</label>
+            <select
+              id="role"
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              className="input"
+            >
+              <option value="sales_rep">Sales Representative</option>
+              <option value="product_manager">Product Manager</option>
+              <option value="admin">Admin</option>
+            </select>
           </div>
-        </div>
+
+          {error && (
+            <p className="text-sm text-red-600">{error}</p>
+          )}
+
+          <div className="flex items-center gap-3 pt-2">
+            <button
+              type="submit"
+              disabled={saving}
+              className="btn btn-primary disabled:opacity-50"
+            >
+              {saving ? 'Saving...' : 'Save Changes'}
+            </button>
+            {saved && (
+              <span className="text-sm text-green-600 font-medium">Saved ✓</span>
+            )}
+          </div>
+        </form>
       </div>
 
       {/* Organization section */}
@@ -104,7 +167,6 @@ export default function SettingsPage() {
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Salesforce */}
           <div className="border border-slate-200 rounded-lg p-4">
             <h3 className="font-medium text-slate-900 mb-2">Salesforce</h3>
             <p className="text-sm text-slate-600 mb-4">
@@ -115,7 +177,6 @@ export default function SettingsPage() {
             </button>
           </div>
 
-          {/* HubSpot */}
           <div className="border border-slate-200 rounded-lg p-4">
             <h3 className="font-medium text-slate-900 mb-2">HubSpot</h3>
             <p className="text-sm text-slate-600 mb-4">

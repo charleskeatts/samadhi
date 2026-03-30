@@ -6,6 +6,8 @@ import { Zap } from 'lucide-react';
 
 export default function OnboardingPage() {
   const [companyName, setCompanyName] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [role, setRole] = useState<'sales_rep' | 'product_manager' | 'admin'>('sales_rep');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
@@ -21,7 +23,11 @@ export default function OnboardingPage() {
       const response = await fetch('/api/onboarding', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ company_name: companyName.trim() }),
+        body: JSON.stringify({
+          company_name: companyName.trim(),
+          full_name: fullName.trim(),
+          role,
+        }),
       });
 
       const data = await response.json();
@@ -36,6 +42,12 @@ export default function OnboardingPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const inputStyle = {
+    backgroundColor: '#0D1B3E',
+    borderColor: '#1565C0',
+    fontFamily: 'Calibri, sans-serif',
   };
 
   return (
@@ -69,18 +81,49 @@ export default function OnboardingPage() {
             className="text-xl font-semibold text-white mb-2"
             style={{ fontFamily: 'Trebuchet MS, sans-serif' }}
           >
-            What&apos;s your company called?
+            Set up your workspace
           </h2>
           <p className="text-sm mb-6" style={{ color: '#7A9CC0' }}>
-            This creates your Clairio workspace.
+            Tell us a bit about yourself and your company.
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label
-                htmlFor="companyName"
-                className="block text-sm font-medium text-white mb-1"
+              <label htmlFor="fullName" className="block text-sm font-medium text-white mb-1">
+                Your name
+              </label>
+              <input
+                id="fullName"
+                type="text"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Jane Smith"
+                required
+                autoFocus
+                className="w-full px-4 py-2 rounded-lg border text-white placeholder-slate-400 focus:outline-none focus:ring-2"
+                style={inputStyle}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="role" className="block text-sm font-medium text-white mb-1">
+                Your role
+              </label>
+              <select
+                id="role"
+                value={role}
+                onChange={(e) => setRole(e.target.value as typeof role)}
+                className="w-full px-4 py-2 rounded-lg border text-white focus:outline-none focus:ring-2"
+                style={inputStyle}
               >
+                <option value="sales_rep">Sales Representative</option>
+                <option value="product_manager">Product Manager</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="companyName" className="block text-sm font-medium text-white mb-1">
                 Company name
               </label>
               <input
@@ -90,13 +133,8 @@ export default function OnboardingPage() {
                 onChange={(e) => setCompanyName(e.target.value)}
                 placeholder="Acme Inc."
                 required
-                autoFocus
                 className="w-full px-4 py-2 rounded-lg border text-white placeholder-slate-400 focus:outline-none focus:ring-2"
-                style={{
-                  backgroundColor: '#0D1B3E',
-                  borderColor: '#1565C0',
-                  fontFamily: 'Calibri, sans-serif',
-                }}
+                style={inputStyle}
               />
             </div>
 
@@ -111,7 +149,7 @@ export default function OnboardingPage() {
 
             <button
               type="submit"
-              disabled={loading || !companyName.trim()}
+              disabled={loading || !companyName.trim() || !fullName.trim()}
               className="w-full py-2 px-4 rounded-lg font-semibold text-white transition-opacity disabled:opacity-50"
               style={{
                 backgroundColor: '#1565C0',
