@@ -1,27 +1,44 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 
+type Mode = 'password' | 'magic';
+
 export default function LoginPage() {
+  const [mode, setMode] = useState<Mode>('password');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
+  const router = useRouter();
 
-  const handleSignIn = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
       const supabase = createClient();
-      const { error } = await supabase.auth.signInWithOtp({
-        email: email.trim(),
-        options: { emailRedirectTo: `${window.location.origin}/callback` },
-      });
-      if (error) throw error;
-      setSubmitted(true);
+
+      if (mode === 'password') {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password,
+        });
+        if (error) throw error;
+        router.push('/dashboard');
+        router.refresh();
+      } else {
+        const { error } = await supabase.auth.signInWithOtp({
+          email: email.trim(),
+          options: { emailRedirectTo: `${window.location.origin}/callback` },
+        });
+        if (error) throw error;
+        setSubmitted(true);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred. Please try again.');
     } finally {
@@ -78,17 +95,39 @@ export default function LoginPage() {
                 fontWeight: 300,
                 color: 'var(--ink)',
                 letterSpacing: '0.08em',
-                marginBottom: '0.25rem',
+                marginBottom: '1.4rem',
               }}>
                 Sign in
               </div>
-              <div style={{ fontSize: '9px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: '1.8rem' }}>
-                Passwordless · Magic link sent to your email
+
+              {/* Mode toggle */}
+              <div style={{ display: 'flex', gap: '4px', marginBottom: '1.4rem' }}>
+                {(['password', 'magic'] as Mode[]).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => { setMode(m); setError(''); }}
+                    style={{
+                      flex: 1,
+                      padding: '0.4rem',
+                      fontSize: '9px',
+                      letterSpacing: '0.14em',
+                      textTransform: 'uppercase',
+                      cursor: 'pointer',
+                      background: mode === m ? 'rgba(232,184,75,0.08)' : 'transparent',
+                      color: mode === m ? 'var(--gold)' : 'var(--ink-muted)',
+                      border: mode === m ? '1px solid rgba(232,184,75,0.3)' : '1px solid var(--border)',
+                      fontFamily: '"DM Mono", monospace',
+                    }}
+                  >
+                    {m === 'password' ? 'Password' : 'Magic Link'}
+                  </button>
+                ))}
               </div>
 
-              <form onSubmit={handleSignIn} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <div>
-                  <label className="label" htmlFor="email">Work email</label>
+                  <label className="label" htmlFor="email">Email</label>
                   <input
                     id="email"
                     type="email"
@@ -100,6 +139,21 @@ export default function LoginPage() {
                     autoFocus
                   />
                 </div>
+
+                {mode === 'password' && (
+                  <div>
+                    <label className="label" htmlFor="password">Password</label>
+                    <input
+                      id="password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                      className="input"
+                    />
+                  </div>
+                )}
 
                 {error && (
                   <div style={{ padding: '0.6rem 0.8rem', border: '1px solid #5a2020', background: '#120808', fontSize: '10px', color: '#ee8870', letterSpacing: '0.06em' }}>
@@ -113,13 +167,15 @@ export default function LoginPage() {
                   className="btn btn-primary"
                   style={{ width: '100%', marginTop: '0.3rem', padding: '0.75rem' }}
                 >
-                  {loading ? 'Sending...' : 'Send Magic Link →'}
+                  {loading
+                    ? 'Signing in...'
+                    : mode === 'password' ? 'Sign In →' : 'Send Magic Link →'}
                 </button>
               </form>
 
               <div style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '10px', color: 'var(--ink-muted)' }}>
-                New to Clairio?{' '}
-                <Link href="/signup" style={{ color: 'var(--gold-dim)' }}>Create account</Link>
+                No account yet?{' '}
+                <Link href="/signup" style={{ color: 'var(--gold-dim)' }}>Create one</Link>
               </div>
             </>
           ) : (
@@ -157,7 +213,7 @@ export default function LoginPage() {
         </div>
 
         <div style={{ textAlign: 'center', marginTop: '1.2rem', fontSize: '9px', letterSpacing: '0.12em', color: 'var(--ink-muted)' }}>
-          Secured by Supabase · Passwordless sign-in
+          Secured by Supabase
         </div>
       </div>
     </div>

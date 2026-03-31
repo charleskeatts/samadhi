@@ -5,6 +5,7 @@
 
 export const dynamic = 'force-dynamic';
 
+import { redirect } from 'next/navigation';
 import { getAuthProfile } from '@/lib/supabase/server';
 import KPICards from '@/components/dashboard/KPICards';
 import FeatureRankingChart from '@/components/dashboard/FeatureRankingChart';
@@ -77,11 +78,7 @@ export default async function DashboardPage() {
   const stats = await getStats();
 
   if (!stats) {
-    return (
-      <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--ink-muted)', fontSize: '11px', letterSpacing: '0.12em' }}>
-        Loading...
-      </div>
-    );
+    redirect('/onboarding');
   }
 
   return (
