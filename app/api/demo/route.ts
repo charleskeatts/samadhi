@@ -30,7 +30,15 @@ export async function POST() {
     );
   }
 
-  const admin = createServiceClient(supabaseUrl, serviceRoleKey);
+  // Service role client with explicit server-side options.
+  // The service role key bypasses RLS when auth options disable
+  // browser-oriented session persistence.
+  const admin = createServiceClient(supabaseUrl, serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
 
   try {
     // 1. Generate unique demo identity
@@ -48,14 +56,15 @@ export async function POST() {
     });
 
     if (userError || !userData.user) {
-      console.error('[demo] createUser failed:', userError);
+      console.error('[demo] createUser failed:', userError?.message, userError);
       return NextResponse.json(
-        { error: 'Failed to create demo user' },
+        { error: `Failed to create demo user: ${userError?.message || 'unknown'}` },
         { status: 500 }
       );
     }
 
     const userId = userData.user.id;
+    console.log(`[demo] created user ${userId} (${email})`);
 
     // 3. Create org
     const slug = `demo-${demoId}`;
@@ -66,35 +75,60 @@ export async function POST() {
       .single();
 
     if (orgError || !org) {
-      console.error('[demo] org creation failed:', orgError);
-      // Clean up user
+      console.error('[demo] org creation failed:', orgError?.message, orgError);
       await admin.auth.admin.deleteUser(userId);
       return NextResponse.json(
-        { error: 'Failed to create demo organization' },
+        { error: `Failed to create demo organization: ${orgError?.message || 'unknown'}` },
         { status: 500 }
       );
     }
 
+    console.log(`[demo] created org ${org.id} (${companyName})`);
+
     // 4. Create profile
-    const { error: profileError } = await admin
-      .from('profiles')
-      .insert({
-        id: userId,
-        org_id: org.id,
-        full_name: 'Demo User',
-        role: 'admin',
-      });
+    // The auth.users FK may need a moment to propagate after admin.createUser.
+    // Retry up to 3 times with a short delay.
+    let profileData = null;
+    let profileError = null;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      const result = await admin
+        .from('profiles')
+        .insert({
+          id: userId,
+          org_id: org.id,
+          full_name: 'Demo User',
+          role: 'admin',
+        })
+        .select('id')
+        .single();
+
+      if (!result.error) {
+        profileData = result.data;
+        profileError = null;
+        break;
+      }
+
+      profileError = result.error;
+      console.warn(`[demo] profile insert attempt ${attempt} failed:`, result.error.message, result.error.code);
+
+      if (attempt < 3) {
+        // Wait 500ms before retry — gives auth.users FK time to propagate
+        await new Promise((r) => setTimeout(r, 500));
+      }
+    }
 
     if (profileError) {
-      console.error('[demo] profile creation failed:', profileError);
+      console.error('[demo] profile creation failed after retries:', profileError.message, profileError.code, profileError.details, profileError.hint);
       // Clean up
       await admin.from('organizations').delete().eq('id', org.id);
       await admin.auth.admin.deleteUser(userId);
       return NextResponse.json(
-        { error: 'Failed to create demo profile' },
+        { error: `Failed to create demo profile: ${profileError.message}` },
         { status: 500 }
       );
     }
+
+    console.log(`[demo] created profile for user ${userId}`, profileData);
 
     // 5. Seed demo data
     try {
