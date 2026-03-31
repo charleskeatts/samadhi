@@ -158,6 +158,8 @@ export default function SignupPage() {
               <div style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '10px', color: 'var(--ink-muted)' }}>
                 Already have an account?{' '}
                 <Link href="/login" style={{ color: 'var(--gold-dim)' }}>Sign in</Link>
+                {' · '}
+                <Link href="/demo" style={{ color: 'var(--gold-dim)' }}>Try demo</Link>
               </div>
             </>
           ) : (
