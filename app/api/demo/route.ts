@@ -86,49 +86,76 @@ export async function POST() {
     console.log(`[demo] created org ${org.id} (${companyName})`);
 
     // 4. Create profile
-    // The auth.users FK may need a moment to propagate after admin.createUser.
-    // Retry up to 3 times with a short delay.
-    let profileData = null;
-    let profileError = null;
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      const result = await admin
-        .from('profiles')
-        .insert({
-          id: userId,
-          org_id: org.id,
-          full_name: 'Demo User',
-          role: 'admin',
-        })
-        .select('id')
-        .single();
-
-      if (!result.error) {
-        profileData = result.data;
-        profileError = null;
-        break;
-      }
-
-      profileError = result.error;
-      console.warn(`[demo] profile insert attempt ${attempt} failed:`, result.error.message, result.error.code);
-
-      if (attempt < 3) {
-        // Wait 500ms before retry — gives auth.users FK time to propagate
-        await new Promise((r) => setTimeout(r, 500));
-      }
-    }
+    // First attempt: standard insert via Supabase JS client
+    let profileCreated = false;
+    const { error: profileError } = await admin
+      .from('profiles')
+      .insert({
+        id: userId,
+        org_id: org.id,
+        full_name: 'Demo User',
+        role: 'admin',
+      });
 
     if (profileError) {
-      console.error('[demo] profile creation failed after retries:', profileError.message, profileError.code, profileError.details, profileError.hint);
-      // Clean up
-      await admin.from('organizations').delete().eq('id', org.id);
-      await admin.auth.admin.deleteUser(userId);
-      return NextResponse.json(
-        { error: `Failed to create demo profile: ${profileError.message}` },
-        { status: 500 }
-      );
+      console.warn('[demo] profile insert via JS client failed:', profileError.message);
+
+      // If PostgREST schema cache is stale, try sending NOTIFY to reload it,
+      // then retry. This uses a raw SQL call via the Supabase SQL endpoint.
+      if (profileError.message.includes('schema cache')) {
+        console.log('[demo] attempting schema cache reload via NOTIFY pgrst...');
+        try {
+          // NOTIFY pgrst, 'reload schema' tells PostgREST to refresh its cache
+          await fetch(`${supabaseUrl}/rest/v1/rpc/`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': serviceRoleKey,
+              'Authorization': `Bearer ${serviceRoleKey}`,
+            },
+            body: '{}',
+          }).catch(() => {});
+
+          // Wait for cache reload
+          await new Promise((r) => setTimeout(r, 2000));
+
+          // Retry the insert
+          const { error: retryError } = await admin
+            .from('profiles')
+            .insert({
+              id: userId,
+              org_id: org.id,
+              full_name: 'Demo User',
+              role: 'admin',
+            });
+
+          if (!retryError) {
+            profileCreated = true;
+            console.log('[demo] profile created on retry after cache reload');
+          } else {
+            console.error('[demo] profile retry also failed:', retryError.message);
+          }
+        } catch (e) {
+          console.error('[demo] schema cache reload attempt failed:', e);
+        }
+      }
+
+      if (!profileCreated) {
+        console.error('[demo] profile creation failed permanently:', profileError.message);
+        await admin.from('organizations').delete().eq('id', org.id);
+        await admin.auth.admin.deleteUser(userId);
+        return NextResponse.json(
+          {
+            error: `Failed to create demo profile: ${profileError.message}. Please go to Supabase Dashboard > Settings > API > Reload schema cache, then try again.`,
+          },
+          { status: 500 }
+        );
+      }
+    } else {
+      profileCreated = true;
     }
 
-    console.log(`[demo] created profile for user ${userId}`, profileData);
+    console.log(`[demo] created profile for user ${userId}`);
 
     // 5. Seed demo data
     try {
