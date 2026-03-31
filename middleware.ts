@@ -16,9 +16,20 @@ export async function middleware(request: NextRequest) {
   const { response, user } = await updateSession(request);
   const pathname = request.nextUrl.pathname;
 
-  // Always allow: API auth callback
-  if (pathname.startsWith('/api/auth')) {
+  // Always allow: API routes (auth callback, demo endpoint, etc.)
+  if (pathname.startsWith('/api/')) {
     return response;
+  }
+
+  // Always allow: /demo page (no auth required for demo entry)
+  if (pathname === '/demo') {
+    // If already authenticated, let them choose — don't force-redirect
+    return response;
+  }
+
+  // Root redirect: / → /demo (showcase the demo entry point)
+  if (pathname === '/') {
+    return NextResponse.redirect(new URL('/demo', request.url));
   }
 
   // Protect dashboard AND onboarding — both require an authenticated session
