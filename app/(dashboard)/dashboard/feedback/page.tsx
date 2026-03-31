@@ -5,26 +5,14 @@
 
 export const dynamic = 'force-dynamic';
 
-import { createClient } from '@/lib/supabase/server';
+import { getAuthProfile } from '@/lib/supabase/server';
 import FeedbackTable from '@/components/feedback/FeedbackTable';
 
 async function getFeedback() {
-  const supabase = await createClient();
+  const auth = await getAuthProfile();
+  if (!auth) return [];
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return [];
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('org_id')
-    .eq('id', user.id)
-    .single();
-
-  if (!profile) return [];
-
-  const { data: feedback } = await supabase
+  const { data: feedback } = await auth.admin
     .from('feedback')
     .select(
       `
@@ -44,7 +32,7 @@ async function getFeedback() {
       accounts:account_id (id, name, arr)
     `
     )
-    .eq('org_id', profile.org_id)
+    .eq('org_id', auth.orgId)
     .order('created_at', { ascending: false });
 
   return feedback || [];

@@ -82,14 +82,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create profile' }, { status: 500 });
     }
 
-    // Fire-and-forget: seed demo data for new orgs.
-    // Non-fatal — failure is logged but does not block the user.
-    // NOTE: safe here because seedDemoData is demo-only and idempotent.
-    // Do NOT copy this pattern for billing, email, or critical writes —
-    // Vercel may freeze the Lambda before a detached Promise resolves.
-    seedDemoData(org.id, user.id).catch((err) =>
-      console.error('[onboarding] seedDemoData failed:', err)
-    );
+    // Seed demo data synchronously so testers land on a populated dashboard.
+    // Awaited (not fire-and-forget) because Vercel freezes the lambda after
+    // the response — detached promises never resolve.
+    try {
+      await seedDemoData(org.id, user.id);
+    } catch (err) {
+      console.error('[onboarding] seedDemoData failed (non-fatal):', err);
+    }
 
     return NextResponse.json({ success: true, org_id: org.id });
   } catch (error) {

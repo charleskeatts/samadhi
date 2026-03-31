@@ -5,30 +5,18 @@
 
 export const dynamic = 'force-dynamic';
 
-import { createClient } from '@/lib/supabase/server';
+import { getAuthProfile } from '@/lib/supabase/server';
 import { RoadmapStatus } from '@/types';
 import { formatARR } from '@/lib/utils';
 
 async function getFeatures(): Promise<Partial<Record<RoadmapStatus, any[]>>> {
-  const supabase = await createClient();
+  const auth = await getAuthProfile();
+  if (!auth) return {};
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return {};
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('org_id')
-    .eq('id', user.id)
-    .single();
-
-  if (!profile) return {};
-
-  const { data: features } = await supabase
+  const { data: features } = await auth.admin
     .from('feature_requests')
     .select('*')
-    .eq('org_id', profile.org_id)
+    .eq('org_id', auth.orgId)
     .order('total_revenue_weight', { ascending: false });
 
   const grouped: Record<RoadmapStatus, any[]> = {

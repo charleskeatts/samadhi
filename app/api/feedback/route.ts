@@ -4,7 +4,7 @@
  * POST: create new feedback and trigger async classification
  */
 
-import { createClient } from '@/lib/supabase/server';
+import { getAuthProfile } from '@/lib/supabase/server';
 import { classifyFeedback } from '@/lib/anthropic/classify';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -24,35 +24,13 @@ const CreateFeedbackSchema = z.object({
  */
 export async function GET(_request: NextRequest) {
   try {
-    const supabase = await createClient();
-
-    // Get current user and their org
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+    const auth = await getAuthProfile();
+    if (!auth) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('org_id')
-      .eq('id', user.id)
-      .single();
-
-    if (!profile) {
-      return NextResponse.json(
-        { error: 'Profile not found' },
-        { status: 404 }
-      );
-    }
-
-    // Fetch feedback with related account data
-    const { data: feedback, error } = await supabase
+    // Use admin client to bypass RLS for reliable reads
+    const { data: feedback, error } = await auth.admin
       .from('feedback')
       .select(`
         id,
@@ -65,7 +43,7 @@ export async function GET(_request: NextRequest) {
         created_at,
         accounts:account_id (id, name, arr)
       `)
-      .eq('org_id', profile.org_id)
+      .eq('org_id', auth.orgId)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -86,31 +64,9 @@ export async function GET(_request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-
-    // Get current user and their org
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('org_id')
-      .eq('id', user.id)
-      .single();
-
-    if (!profile) {
-      return NextResponse.json(
-        { error: 'Profile not found' },
-        { status: 404 }
-      );
+    const auth = await getAuthProfile();
+    if (!auth) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Parse and validate request body
@@ -119,11 +75,11 @@ export async function POST(request: NextRequest) {
 
     const { raw_text, account_name, arr, crm_note_id: _crm_note_id } = validatedData;
 
-    // Find or create account
-    const { data: existingAccount } = await supabase
+    // Find or create account (use admin client to bypass RLS)
+    const { data: existingAccount } = await auth.admin
       .from('accounts')
       .select('id')
-      .eq('org_id', profile.org_id)
+      .eq('org_id', auth.orgId)
       .eq('name', account_name)
       .single();
 
@@ -132,10 +88,10 @@ export async function POST(request: NextRequest) {
     if (existingAccount) {
       accountId = existingAccount.id;
     } else {
-      const { data: newAccount, error: createError } = await supabase
+      const { data: newAccount, error: createError } = await auth.admin
         .from('accounts')
         .insert({
-          org_id: profile.org_id,
+          org_id: auth.orgId,
           name: account_name,
           arr: arr,
           crm_source: 'manual',
@@ -148,12 +104,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Create feedback record
-    const { data: feedback, error: feedbackError } = await supabase
+    const { data: feedback, error: feedbackError } = await auth.admin
       .from('feedback')
       .insert({
-        org_id: profile.org_id,
+        org_id: auth.orgId,
         account_id: accountId,
-        rep_id: user.id,
+        rep_id: auth.user.id,
         raw_text,
         revenue_weight: arr,
         status: 'new',

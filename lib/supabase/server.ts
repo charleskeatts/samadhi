@@ -4,6 +4,7 @@
  */
 
 import { createServerClient } from '@supabase/ssr';
+import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 
 export async function createClient() {
@@ -30,4 +31,30 @@ export async function createClient() {
       },
     }
   );
+}
+
+/**
+ * Get the current authenticated user and their profile/org_id.
+ * Uses the session client for auth, then the service role client
+ * for the profile lookup to bypass RLS (avoids circular policy issues).
+ */
+export async function getAuthProfile() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const admin = createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('id, org_id, full_name, role')
+    .eq('id', user.id)
+    .single();
+
+  if (!profile) return null;
+
+  return { user, profile, orgId: profile.org_id, admin };
 }

@@ -5,47 +5,35 @@
 
 export const dynamic = 'force-dynamic';
 
-import { createClient } from '@/lib/supabase/server';
+import { getAuthProfile } from '@/lib/supabase/server';
 import KPICards from '@/components/dashboard/KPICards';
 import FeatureRankingChart from '@/components/dashboard/FeatureRankingChart';
 import { formatARR, timeAgo } from '@/lib/utils';
 import Link from 'next/link';
 
 async function getStats() {
-  const supabase = await createClient();
+  const auth = await getAuthProfile();
+  if (!auth) return null;
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
+  const { admin, orgId } = auth;
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('org_id')
-    .eq('id', user.id)
-    .single();
-
-  if (!profile) return null;
-
-  const orgId = profile.org_id;
-
-  const { count: feedbackCount } = await supabase
+  const { count: feedbackCount } = await admin
     .from('feedback')
     .select('id', { count: 'exact' })
     .eq('org_id', orgId);
 
-  const { data: feedbackData } = await supabase
+  const { data: feedbackData } = await admin
     .from('feedback')
     .select('revenue_weight')
     .eq('org_id', orgId);
   const totalARR = feedbackData?.reduce((sum, f) => sum + (f.revenue_weight || 0), 0) || 0;
 
-  const { count: featureCount } = await supabase
+  const { count: featureCount } = await admin
     .from('feature_requests')
     .select('id', { count: 'exact' })
     .eq('org_id', orgId);
 
-  const { data: urgencyData } = await supabase
+  const { data: urgencyData } = await admin
     .from('feedback')
     .select('urgency_score')
     .eq('org_id', orgId);
@@ -54,7 +42,7 @@ async function getStats() {
       ? Math.round(urgencyData.reduce((sum, f) => sum + f.urgency_score, 0) / urgencyData.length)
       : 0;
 
-  const { data: recentFeedback } = await supabase
+  const { data: recentFeedback } = await admin
     .from('feedback')
     .select(`
       id,
@@ -68,7 +56,7 @@ async function getStats() {
     .order('created_at', { ascending: false })
     .limit(5);
 
-  const { data: topFeatures } = await supabase
+  const { data: topFeatures } = await admin
     .from('feature_requests')
     .select('id, org_id, title, description, total_revenue_weight, account_count, feedback_ids, roadmap_status, category, blocker_score, created_at, updated_at')
     .eq('org_id', orgId)
