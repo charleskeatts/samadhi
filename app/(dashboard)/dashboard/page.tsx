@@ -90,9 +90,9 @@ export default async function DashboardPage() {
         {/* Recent feature requests */}
         <div className="card" style={{ padding: '1.4rem 1.6rem' }}>
           <div style={{
-            fontFamily: '"Cormorant Garamond", serif',
+            fontFamily: '"Playfair Display", Georgia, serif',
             fontSize: '1rem',
-            fontWeight: 300,
+            fontWeight: 700,
             color: 'var(--ink)',
             letterSpacing: '0.06em',
             marginBottom: '1.2rem',
@@ -146,9 +146,9 @@ export default async function DashboardPage() {
         {/* Top features by blocker score */}
         <div className="card" style={{ padding: '1.4rem 1.6rem' }}>
           <div style={{
-            fontFamily: '"Cormorant Garamond", serif',
+            fontFamily: '"Playfair Display", Georgia, serif',
             fontSize: '1rem',
-            fontWeight: 300,
+            fontWeight: 700,
             color: 'var(--ink)',
             letterSpacing: '0.06em',
             marginBottom: '1.2rem',
@@ -170,7 +170,7 @@ export default async function DashboardPage() {
                 }}>
                   <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
                     <span style={{
-                      fontFamily: '"Cormorant Garamond", serif',
+                      fontFamily: '"Playfair Display", Georgia, serif',
                       fontSize: '1.1rem',
                       color: i === 0 ? 'var(--gold)' : 'var(--border-bright)',
                       fontStyle: 'italic',

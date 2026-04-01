@@ -60,14 +60,14 @@ export default function LoginPage() {
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
           <div style={{
-            fontFamily: '"Cormorant Garamond", serif',
-            fontSize: '2.8rem',
-            fontWeight: 300,
-            letterSpacing: '0.3em',
+            fontFamily: '"Playfair Display", Georgia, serif',
+            fontSize: '2.4rem',
+            fontWeight: 700,
+            letterSpacing: '-0.02em',
             color: 'var(--ink)',
             lineHeight: 1,
           }}>
-            CL<span style={{ color: 'var(--gold)' }}>A</span>IRIO
+            Cl<span style={{ color: 'var(--teal)', fontStyle: 'italic' }}>ai</span>rio
           </div>
           <div style={{
             fontSize: '9px',
@@ -90,11 +90,11 @@ export default function LoginPage() {
           {!submitted ? (
             <>
               <div style={{
-                fontFamily: '"Cormorant Garamond", serif',
-                fontSize: '1.2rem',
-                fontWeight: 300,
+                fontFamily: '"Playfair Display", Georgia, serif',
+                fontSize: '1.3rem',
+                fontWeight: 700,
                 color: 'var(--ink)',
-                letterSpacing: '0.08em',
+                letterSpacing: '-0.01em',
                 marginBottom: '1.4rem',
               }}>
                 Sign in
@@ -114,9 +114,9 @@ export default function LoginPage() {
                       letterSpacing: '0.14em',
                       textTransform: 'uppercase',
                       cursor: 'pointer',
-                      background: mode === m ? 'rgba(232,184,75,0.08)' : 'transparent',
-                      color: mode === m ? 'var(--gold)' : 'var(--ink-muted)',
-                      border: mode === m ? '1px solid rgba(232,184,75,0.3)' : '1px solid var(--border)',
+                      background: mode === m ? 'rgba(0,184,160,0.08)' : 'transparent',
+                      color: mode === m ? 'var(--teal)' : 'var(--ink-muted)',
+                      border: mode === m ? '1px solid rgba(0,184,160,0.3)' : '1px solid var(--border)',
                       fontFamily: '"DM Mono", monospace',
                     }}
                   >
@@ -156,7 +156,7 @@ export default function LoginPage() {
                 )}
 
                 {error && (
-                  <div style={{ padding: '0.6rem 0.8rem', border: '1px solid #5a2020', background: '#120808', fontSize: '10px', color: '#ee8870', letterSpacing: '0.06em' }}>
+                  <div style={{ padding: '0.6rem 0.8rem', border: '1px solid rgba(201,64,64,0.3)', background: 'rgba(201,64,64,0.06)', fontSize: '10px', color: 'var(--red)', letterSpacing: '0.06em' }}>
                     {error}
                   </div>
                 )}
@@ -181,16 +181,16 @@ export default function LoginPage() {
           ) : (
             <div style={{ textAlign: 'center', padding: '1rem 0' }}>
               <div style={{
-                fontFamily: '"Cormorant Garamond", serif',
+                fontFamily: '"Playfair Display", Georgia, serif',
                 fontSize: '2.5rem',
                 color: 'var(--gold)',
                 fontStyle: 'italic',
                 marginBottom: '1rem',
               }}>✓</div>
               <div style={{
-                fontFamily: '"Cormorant Garamond", serif',
+                fontFamily: '"Playfair Display", Georgia, serif',
                 fontSize: '1.1rem',
-                fontWeight: 300,
+                fontWeight: 700,
                 color: 'var(--ink)',
                 letterSpacing: '0.08em',
                 marginBottom: '0.5rem',

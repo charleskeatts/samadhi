@@ -69,14 +69,14 @@ export default function DemoPage() {
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
           <div style={{
-            fontFamily: '"Cormorant Garamond", serif',
-            fontSize: '2.8rem',
-            fontWeight: 300,
-            letterSpacing: '0.3em',
+            fontFamily: '"Playfair Display", Georgia, serif',
+            fontSize: '2.4rem',
+            fontWeight: 700,
+            letterSpacing: '-0.02em',
             color: 'var(--ink)',
             lineHeight: 1,
           }}>
-            CL<span style={{ color: 'var(--gold)' }}>A</span>IRIO
+            Cl<span style={{ color: 'var(--teal)', fontStyle: 'italic' }}>ai</span>rio
           </div>
           <div style={{
             fontSize: '9px',
@@ -97,9 +97,9 @@ export default function DemoPage() {
           padding: '2.4rem',
         }}>
           <div style={{
-            fontFamily: '"Cormorant Garamond", serif',
+            fontFamily: '"Playfair Display", Georgia, serif',
             fontSize: '1.3rem',
-            fontWeight: 300,
+            fontWeight: 700,
             color: 'var(--ink)',
             letterSpacing: '0.08em',
             marginBottom: '0.3rem',

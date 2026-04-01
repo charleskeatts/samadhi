@@ -57,14 +57,14 @@ export default function OnboardingPage() {
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
           <div style={{
-            fontFamily: '"Cormorant Garamond", serif',
-            fontSize: '2.8rem',
-            fontWeight: 300,
-            letterSpacing: '0.3em',
+            fontFamily: '"Playfair Display", Georgia, serif',
+            fontSize: '2.4rem',
+            fontWeight: 700,
+            letterSpacing: '-0.02em',
             color: 'var(--ink)',
             lineHeight: 1,
           }}>
-            CL<span style={{ color: 'var(--gold)' }}>A</span>IRIO
+            Cl<span style={{ color: 'var(--teal)', fontStyle: 'italic' }}>ai</span>rio
           </div>
           <div style={{
             fontSize: '9px',
@@ -85,11 +85,11 @@ export default function OnboardingPage() {
           padding: '2.2rem',
         }}>
           <div style={{
-            fontFamily: '"Cormorant Garamond", serif',
-            fontSize: '1.2rem',
-            fontWeight: 300,
+            fontFamily: '"Playfair Display", Georgia, serif',
+            fontSize: '1.3rem',
+            fontWeight: 700,
             color: 'var(--ink)',
-            letterSpacing: '0.08em',
+            letterSpacing: '-0.01em',
             marginBottom: '0.25rem',
           }}>
             Set up your workspace
@@ -141,7 +141,7 @@ export default function OnboardingPage() {
             </div>
 
             {error && (
-              <div style={{ padding: '0.6rem 0.8rem', border: '1px solid #5a2020', background: '#120808', fontSize: '10px', color: '#ee8870', letterSpacing: '0.06em' }}>
+              <div style={{ padding: '0.6rem 0.8rem', border: '1px solid rgba(201,64,64,0.3)', background: 'rgba(201,64,64,0.06)', fontSize: '10px', color: 'var(--red)', letterSpacing: '0.06em' }}>
                 {error}
               </div>
             )}

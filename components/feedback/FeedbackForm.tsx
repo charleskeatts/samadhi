@@ -58,7 +58,7 @@ export default function FeedbackForm({ onSuccess }: FeedbackFormProps) {
   if (success) {
     return (
       <div className="card" style={{ borderTop: '2px solid var(--green)', textAlign: 'center', padding: '1.5rem' }}>
-        <div style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: '1.5rem', color: 'var(--green)', marginBottom: '0.5rem' }}>✓</div>
+        <div style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: '1.5rem', color: 'var(--green)', marginBottom: '0.5rem' }}>✓</div>
         <div style={{ fontSize: '11px', color: 'var(--ink-dim)', letterSpacing: '0.08em' }}>Feature request logged</div>
       </div>
     );
@@ -66,12 +66,12 @@ export default function FeedbackForm({ onSuccess }: FeedbackFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-      <div style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: '1rem', fontWeight: 300, color: 'var(--ink)', letterSpacing: '0.06em' }}>
+      <div style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: '1rem', fontWeight: 700, color: 'var(--ink)', letterSpacing: '0.06em' }}>
         Log Feature Request
       </div>
 
       {error && (
-        <div style={{ padding: '0.6rem 0.8rem', border: '1px solid #5a2020', background: '#120808', fontSize: '10px', color: '#ee8870', letterSpacing: '0.06em' }}>
+        <div style={{ padding: '0.6rem 0.8rem', border: '1px solid rgba(201,64,64,0.3)', background: 'rgba(201,64,64,0.06)', fontSize: '10px', color: 'var(--red)', letterSpacing: '0.06em' }}>
           {error}
         </div>
       )}

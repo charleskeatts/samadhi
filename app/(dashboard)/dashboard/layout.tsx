@@ -31,8 +31,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <aside style={{
         width: 220,
         minWidth: 220,
-        background: '#060504',
-        borderRight: '1px solid var(--border)',
+        background: 'var(--ink)',
+        borderRight: '2px solid var(--ink)',
         display: 'flex',
         flexDirection: 'column',
         flexShrink: 0,
@@ -44,24 +44,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Logo */}
         <div style={{
           padding: '1.8rem 1.4rem 1.4rem',
-          borderBottom: '1px solid var(--border)',
+          borderBottom: '1px solid rgba(255,255,255,0.08)',
         }}>
           <div style={{
-            fontFamily: '"Cormorant Garamond", serif',
-            fontSize: '1.7rem',
-            fontWeight: 300,
-            letterSpacing: '0.22em',
-            color: 'var(--ink)',
+            fontFamily: '"Playfair Display", Georgia, serif',
+            fontSize: '1.5rem',
+            fontWeight: 700,
+            letterSpacing: '-0.02em',
+            color: '#ffffff',
             lineHeight: 1,
           }}>
-            CL<span style={{ color: 'var(--gold)' }}>A</span>IRIO
+            Cl<span style={{ color: 'var(--teal)', fontStyle: 'italic' }}>ai</span>rio
           </div>
           <div style={{
-            fontSize: '8px',
-            letterSpacing: '0.2em',
+            fontSize: '9px',
+            letterSpacing: '0.18em',
             textTransform: 'uppercase',
-            color: 'var(--ink-muted)',
-            marginTop: '0.3rem',
+            color: 'rgba(255,255,255,0.35)',
+            marginTop: '0.35rem',
+            fontFamily: '"DM Mono", monospace',
           }}>
             Revenue Intelligence
           </div>
@@ -81,32 +82,33 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   gap: '0.75rem',
                   padding: '0.55rem 0.7rem',
                   fontSize: '10px',
-                  letterSpacing: '0.16em',
+                  letterSpacing: '0.14em',
                   textTransform: 'uppercase',
-                  color: active ? 'var(--gold)' : 'var(--ink-muted)',
-                  background: active ? 'rgba(232,184,75,0.07)' : 'transparent',
-                  borderLeft: active ? '2px solid var(--gold)' : '2px solid transparent',
+                  fontFamily: '"DM Mono", monospace',
+                  color: active ? 'var(--teal)' : 'rgba(255,255,255,0.45)',
+                  background: active ? 'rgba(0,184,160,0.1)' : 'transparent',
+                  borderLeft: active ? '2px solid var(--teal)' : '2px solid transparent',
                   transition: 'all 0.15s',
                   textDecoration: 'none',
                 }}
                 onMouseEnter={(e) => {
                   if (!active) {
-                    (e.currentTarget as HTMLElement).style.color = 'var(--ink-dim)';
-                    (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)';
+                    (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.8)';
+                    (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)';
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (!active) {
-                    (e.currentTarget as HTMLElement).style.color = 'var(--ink-muted)';
+                    (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.45)';
                     (e.currentTarget as HTMLElement).style.background = 'transparent';
                   }
                 }}
               >
                 <span style={{
-                  fontFamily: '"Cormorant Garamond", serif',
+                  fontFamily: '"Playfair Display", Georgia, serif',
                   fontSize: '11px',
                   fontStyle: 'italic',
-                  color: active ? 'var(--gold-dim)' : 'var(--border-bright)',
+                  color: active ? 'var(--teal-dk)' : 'rgba(255,255,255,0.2)',
                   minWidth: '1.4rem',
                 }}>
                   {item.abbr}
@@ -118,14 +120,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </nav>
 
         {/* Sign out */}
-        <div style={{ padding: '0.9rem 0.75rem', borderTop: '1px solid var(--border)' }}>
+        <div style={{ padding: '0.9rem 0.75rem', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
           <button
             onClick={handleSignOut}
             style={{
               width: '100%',
               background: 'none',
-              border: '1px solid var(--border)',
-              color: 'var(--ink-muted)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              color: 'rgba(255,255,255,0.35)',
               fontFamily: '"DM Mono", monospace',
               fontSize: '9px',
               letterSpacing: '0.18em',
@@ -135,12 +137,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               transition: 'all 0.2s',
             }}
             onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.borderColor = 'var(--orange-dim)';
-              (e.currentTarget as HTMLElement).style.color = 'var(--orange)';
+              (e.currentTarget as HTMLElement).style.borderColor = 'var(--red)';
+              (e.currentTarget as HTMLElement).style.color = 'var(--red)';
             }}
             onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)';
-              (e.currentTarget as HTMLElement).style.color = 'var(--ink-muted)';
+              (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.12)';
+              (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.35)';
             }}
           >
             Sign Out
@@ -156,18 +158,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         left: 0,
         right: 0,
         zIndex: 50,
-        background: '#060504',
-        borderBottom: '1px solid var(--border)',
+        background: 'var(--ink)',
+        borderBottom: '2px solid var(--ink)',
         padding: '0.9rem 1.2rem',
         alignItems: 'center',
         justifyContent: 'space-between',
       }} className="mobile-hdr">
-        <span style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: '1.3rem', fontWeight: 300, letterSpacing: '0.22em', color: 'var(--ink)' }}>
-          CL<span style={{ color: 'var(--gold)' }}>A</span>IRIO
+        <span style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: '1.3rem', fontWeight: 700, letterSpacing: '-0.02em', color: '#ffffff' }}>
+          Cl<span style={{ color: 'var(--teal)', fontStyle: 'italic' }}>ai</span>rio
         </span>
         <button
           onClick={() => setOpen(!open)}
-          style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--ink-muted)', padding: '0.3rem 0.6rem', cursor: 'pointer', fontSize: '11px' }}
+          style={{ background: 'none', border: '1px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.6)', padding: '0.3rem 0.6rem', cursor: 'pointer', fontSize: '11px' }}
         >
           {open ? '✕' : '☰'}
         </button>
@@ -186,9 +188,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           fontSize: '9px',
           letterSpacing: '0.12em',
           color: 'var(--ink-muted)',
+          fontFamily: '"DM Mono", monospace',
         }}>
           <span>Clairio · Revenue-Weighted Product Intelligence</span>
-          <span style={{ fontFamily: '"Cormorant Garamond", serif', fontStyle: 'italic' }}>Samadi Consulting LLC</span>
+          <span style={{ fontFamily: '"Playfair Display", serif', fontStyle: 'italic', fontSize: '11px' }}>Samadhi Consulting LLC</span>
         </footer>
       </main>
     </div>

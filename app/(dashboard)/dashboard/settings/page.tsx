@@ -102,9 +102,9 @@ export default function SettingsPage() {
       {/* Profile section */}
       <div className="card">
         <div style={{
-          fontFamily: '"Cormorant Garamond", serif',
+          fontFamily: '"Playfair Display", Georgia, serif',
           fontSize: '1rem',
-          fontWeight: 300,
+          fontWeight: 700,
           color: 'var(--ink)',
           letterSpacing: '0.06em',
           marginBottom: '1.4rem',
@@ -140,7 +140,7 @@ export default function SettingsPage() {
           </div>
 
           {error && (
-            <div style={{ padding: '0.6rem 0.8rem', border: '1px solid #5a2020', background: '#120808', fontSize: '10px', color: '#ee8870', letterSpacing: '0.06em' }}>
+            <div style={{ padding: '0.6rem 0.8rem', border: '1px solid rgba(201,64,64,0.3)', background: 'rgba(201,64,64,0.06)', fontSize: '10px', color: 'var(--red)', letterSpacing: '0.06em' }}>
               {error}
             </div>
           )}
@@ -166,9 +166,9 @@ export default function SettingsPage() {
       {/* Organization section */}
       <div className="card">
         <div style={{
-          fontFamily: '"Cormorant Garamond", serif',
+          fontFamily: '"Playfair Display", Georgia, serif',
           fontSize: '1rem',
-          fontWeight: 300,
+          fontWeight: 700,
           color: 'var(--ink)',
           letterSpacing: '0.06em',
           marginBottom: '1.4rem',
@@ -192,9 +192,9 @@ export default function SettingsPage() {
       {/* CRM Connections section */}
       <div className="card">
         <div style={{
-          fontFamily: '"Cormorant Garamond", serif',
+          fontFamily: '"Playfair Display", Georgia, serif',
           fontSize: '1rem',
-          fontWeight: 300,
+          fontWeight: 700,
           color: 'var(--ink)',
           letterSpacing: '0.06em',
           marginBottom: '0.5rem',

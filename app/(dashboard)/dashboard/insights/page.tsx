@@ -96,7 +96,7 @@ export default function InsightsPage() {
         <div>
           {selected ? (
             <div className="card">
-              <div style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: '1.3rem', fontWeight: 300, color: 'var(--ink)', letterSpacing: '0.04em', marginBottom: '0.75rem' }}>
+              <div style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: '1.3rem', fontWeight: 700, color: 'var(--ink)', letterSpacing: '0.04em', marginBottom: '0.75rem' }}>
                 {selected.feature_name}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.2rem', flexWrap: 'wrap' }}>

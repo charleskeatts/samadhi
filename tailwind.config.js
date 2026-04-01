@@ -8,38 +8,45 @@ module.exports = {
     extend: {
       colors: {
         bg: {
-          DEFAULT: '#080806',
-          card: '#0e0c0a',
-          input: '#0a0806',
+          DEFAULT: '#f5f0e8',
+          card: '#ffffff',
+          input: '#ffffff',
+        },
+        teal: {
+          DEFAULT: '#00b8a0',
+          dk: '#008f7c',
+          pale: '#e0f5f2',
         },
         gold: {
-          DEFAULT: '#e8b84b',
-          dim: '#c8982b',
+          DEFAULT: '#00b8a0',
+          dim: '#008f7c',
         },
         amber: {
-          DEFAULT: '#f07830',
-          dim: '#c85820',
+          DEFAULT: '#e8a020',
+          dim: '#c8820a',
         },
         border: {
-          DEFAULT: '#2a2620',
-          bright: '#4a4030',
+          DEFAULT: '#d8d0c4',
+          bright: '#b8af9f',
         },
         ink: {
-          DEFAULT: '#f5f2ee',
-          dim: '#c8c0b4',
-          muted: '#6a6058',
+          DEFAULT: '#1a1612',
+          dim: '#3d3530',
+          muted: '#7a6f65',
         },
         emerald: {
-          DEFAULT: '#4aaa6a',
+          DEFAULT: '#00897b',
         },
         crimson: {
-          DEFAULT: '#cc5548',
+          DEFAULT: '#c94040',
         },
       },
       fontFamily: {
-        serif: ['"Cormorant Garamond"', 'Georgia', 'serif'],
+        display: ['"Playfair Display"', 'Georgia', 'serif'],
+        serif: ['"Playfair Display"', 'Georgia', 'serif'],
         mono: ['"DM Mono"', 'monospace'],
-        sans: ['"DM Mono"', 'monospace'],
+        sans: ['"DM Sans"', 'sans-serif'],
+        body: ['"DM Sans"', 'sans-serif'],
       },
     },
   },

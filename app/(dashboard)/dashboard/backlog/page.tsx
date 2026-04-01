@@ -95,7 +95,7 @@ export default function BacklogPage() {
             <div style={{ fontSize: '8px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: '0.5rem' }}>
               {kpi.label}
             </div>
-            <div style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: '1.8rem', fontWeight: 300, color: kpi.accent, lineHeight: 1 }}>
+            <div style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: '1.8rem', fontWeight: 700, color: kpi.accent, lineHeight: 1 }}>
               {kpi.value}
             </div>
           </div>
@@ -155,7 +155,7 @@ export default function BacklogPage() {
                   onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = 'rgba(255,255,255,0.015)'; }}
                   onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}
                 >
-                  <div style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: '1rem', fontStyle: 'italic', color: i < 3 ? 'var(--gold)' : 'var(--border-bright)' }}>
+                  <div style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: '1rem', fontStyle: 'italic', color: i < 3 ? 'var(--gold)' : 'var(--border-bright)' }}>
                     {i + 1}
                   </div>
                   <div>

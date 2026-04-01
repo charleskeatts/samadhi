@@ -24,7 +24,7 @@ export default function KPICards({ totalARR, featureCount, accountCount, avgBloc
           <div style={{ fontSize: '8px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: '0.6rem' }}>
             {card.label}
           </div>
-          <div style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: '2rem', fontWeight: 300, color: card.accent, lineHeight: 1 }}>
+          <div style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: '2rem', fontWeight: 700, color: card.accent, lineHeight: 1 }}>
             {card.value}
           </div>
         </div>
