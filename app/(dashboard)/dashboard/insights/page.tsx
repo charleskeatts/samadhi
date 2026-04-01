@@ -147,7 +147,7 @@ export default function InsightsPage() {
                     {selectedFeature.accounts?.name ?? 'Unknown'}
                   </span>
                   <span className="chip">
-                    {selectedFeature.deal_stage ?? 'discovery'}
+                    {selectedFeature.deal_stage ?? 'backlog'}
                   </span>
                   {selectedFeature.category && (
                     <span className="chip" style={{ color: 'var(--gold-dim)', borderColor: 'rgba(200,152,43,0.35)' }}>

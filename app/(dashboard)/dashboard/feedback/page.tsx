@@ -95,7 +95,7 @@ export default function FeedbackPage() {
                     </td>
                     <td>
                       <span className="chip" style={{ fontSize: '8px' }}>
-                        {item.deal_stage ?? 'discovery'}
+                        {item.deal_stage ?? 'backlog'}
                       </span>
                     </td>
                     <td>

@@ -23,18 +23,16 @@ const BLOCKER_COLOR: Record<number, string> = {
 };
 
 const STAGE_DISPLAY: Record<string, string> = {
-  discovery:    'Discovery',
-  evaluation:   'Evaluation',
-  negotiation:  'Negotiation',
-  closed_won:   'Closed Won',
-  closed_lost:  'Closed Lost',
+  backlog:      'Not Started',
+  planned:      'Planned',
+  in_progress:  'In Progress',
+  shipped:      'Shipped',
 };
 const STAGE_COLOR: Record<string, string> = {
-  discovery:    'var(--border-bright)',
-  evaluation:   '#3a7bd5',
-  negotiation:  'var(--gold-dim)',
-  closed_won:   'var(--green)',
-  closed_lost:  'var(--red)',
+  backlog:      'var(--border-bright)',
+  planned:      '#3a7bd5',
+  in_progress:  'var(--gold-dim)',
+  shipped:      'var(--green)',
 };
 
 function fmt(n: number): string {
@@ -117,7 +115,7 @@ export default function BacklogPage() {
   }
 
   // Kanban stages come from deal_stage
-  const kanbanStages = ['discovery', 'evaluation', 'negotiation', 'closed_won'];
+  const kanbanStages = ['backlog', 'planned', 'in_progress', 'shipped'];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -249,7 +247,7 @@ export default function BacklogPage() {
             const isSelected = selectedId === f.id;
             const blockerColor = BLOCKER_COLOR[score] || 'var(--border-bright)';
             const accountARR = getARR(f);
-            const stage = f.deal_stage || 'discovery';
+            const stage = f.deal_stage || 'backlog';
 
             return (
               <div key={f.id}>
@@ -371,7 +369,7 @@ export default function BacklogPage() {
         /* ── KANBAN VIEW (by deal_stage) ── */
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
           {kanbanStages.map((stage) => {
-            const cols = filtered.filter((f) => (f.deal_stage || 'discovery') === stage);
+            const cols = filtered.filter((f) => (f.deal_stage || 'backlog') === stage);
             const colARR = cols.reduce((s, f) => s + getARR(f), 0);
             const stageColor = STAGE_COLOR[stage] || 'var(--border-bright)';
             return (
