@@ -78,18 +78,22 @@ export async function POST() {
 
     console.log(`[demo] created org ${org.id}`);
 
-    // 4. Create profile (uses organization_id, NOT org_id)
+    // 4. Create profile — use upsert to handle the case where a DB trigger
+    //    or previous failed run already created a profile for this user ID.
     const { error: profileError } = await admin
       .from('profiles')
-      .insert({
-        id: userId,
-        organization_id: org.id,
-        full_name: 'Demo User',
-        role: 'admin',
-      });
+      .upsert(
+        {
+          id: userId,
+          organization_id: org.id,
+          full_name: 'Demo User',
+          role: 'admin',
+        },
+        { onConflict: 'id' }
+      );
 
     if (profileError) {
-      console.error('[demo] profile creation failed:', profileError.message);
+      console.error('[demo] profile upsert failed:', profileError.message);
       await admin.from('organizations').delete().eq('id', org.id);
       await admin.auth.admin.deleteUser(userId);
       return NextResponse.json(
@@ -98,7 +102,7 @@ export async function POST() {
       );
     }
 
-    console.log(`[demo] created profile for user ${userId}`);
+    console.log(`[demo] created/updated profile for user ${userId}`);
 
     // 5. Seed demo data
     try {
