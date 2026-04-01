@@ -2,9 +2,7 @@
  * Roadmap page
  * Kanban-style view of feature requests by deal stage
  *
- * ACTUAL feature_requests columns:
- *   id, organization_id, account_id, feature_name, category, deal_stage,
- *   notes, submitted_by, source, confidence, confidence_note, created_at, blocker_score
+ * VALID deal_stage values: Prospect | Qualified | Negotiation
  */
 
 export const dynamic = 'force-dynamic';
@@ -12,16 +10,14 @@ export const dynamic = 'force-dynamic';
 import { getAuthProfile } from '@/lib/supabase/server';
 import { formatARR } from '@/lib/utils';
 
-type DealStage = 'New Business' | 'Active' | 'Expansion' | 'Renewal' | 'At Risk';
+type DealStage = 'Prospect' | 'Qualified' | 'Negotiation';
 
-const STAGES: DealStage[] = ['New Business', 'Active', 'Expansion', 'Renewal', 'At Risk'];
+const STAGES: DealStage[] = ['Prospect', 'Qualified', 'Negotiation'];
 
-const STAGE_META: Record<DealStage, { label: string; color: string }> = {
-  'New Business': { label: 'New Business',  color: '#3a7bd5' },
-  'Active':       { label: 'Active',        color: 'var(--green)' },
-  'Expansion':    { label: 'Expansion',     color: 'var(--gold-dim)' },
-  'Renewal':      { label: 'Renewal',       color: 'var(--orange-dim)' },
-  'At Risk':      { label: 'At Risk',       color: 'var(--red)' },
+const STAGE_META: Record<DealStage, { label: string; color: string; description: string }> = {
+  'Prospect':    { label: 'Prospect',    color: '#38bdf8', description: 'Early-stage interest' },
+  'Qualified':   { label: 'Qualified',   color: 'var(--green)', description: 'Validated need' },
+  'Negotiation': { label: 'Negotiation', color: 'var(--orange)', description: 'Active deal' },
 };
 
 async function getFeatures() {
@@ -42,7 +38,6 @@ async function getFeatures() {
   for (const stage of STAGES) {
     grouped[stage] = [];
   }
-  // Catch-all for unrecognized stages
   grouped['Other'] = [];
 
   features?.forEach((feature) => {
@@ -71,7 +66,7 @@ export default async function RoadmapPage() {
 
       <div style={{ display: 'grid', gridTemplateColumns: `repeat(${columns.length}, 1fr)`, gap: '1.2rem', overflowX: 'auto' }}>
         {columns.map((stage) => {
-          const meta = STAGE_META[stage as DealStage] || { label: stage, color: 'var(--border-bright)' };
+          const meta = STAGE_META[stage as DealStage] || { label: stage, color: 'var(--border-bright)', description: '' };
           const items = grouped[stage] || [];
 
           return (

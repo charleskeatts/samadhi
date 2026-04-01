@@ -150,7 +150,7 @@ export default function InsightsPage() {
                     {selectedFeature.deal_stage ?? 'backlog'}
                   </span>
                   {selectedFeature.category && (
-                    <span className="chip" style={{ color: 'var(--gold-dim)', borderColor: 'rgba(200,152,43,0.35)' }}>
+                    <span className="chip" style={{ color: 'var(--accent)', borderColor: 'rgba(56,189,248,0.35)' }}>
                       {selectedFeature.category}
                     </span>
                   )}

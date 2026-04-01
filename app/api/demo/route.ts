@@ -6,13 +6,17 @@
  *
  * NOTE: This route is for beta/MVP demo testing only.
  *
- * ACTUAL DB SCHEMA (as of 2026-03-31):
+ * ACTUAL DB SCHEMA (as of 2026-04-01):
  *   profiles:         id, organization_id, full_name, role, created_at
  *   organizations:    id, name, slug, created_at
  *   accounts:         id, organization_id, name, arr, crm_source, crm_id, created_at
  *   feature_requests: id, organization_id, account_id, feature_name, category,
  *                     deal_stage, notes, submitted_by, source, confidence,
  *                     confidence_note, created_at, blocker_score
+ *
+ * VALID ENUMS:
+ *   category:   Integration | Analytics | Security | Performance
+ *   deal_stage: Prospect | Qualified | Negotiation
  */
 
 import { createClient as createServiceClient } from '@supabase/supabase-js';
@@ -107,7 +111,7 @@ export async function POST() {
     // 5. Seed demo data
     let seedError: string | null = null;
     try {
-      await seedDemoAccounts(admin, org.id, userId);
+      await seedDemoData(admin, org.id, userId);
     } catch (err: any) {
       console.error('[demo] seed failed (non-fatal):', err);
       seedError = err?.message || String(err);
@@ -122,14 +126,12 @@ export async function POST() {
 }
 
 /**
- * Seed demo data directly (avoids the old seed-demo.ts which uses wrong column names).
- * Matches the ACTUAL database schema.
+ * Seed demo data with realistic feature requests.
+ * Uses only VALID enum values:
+ *   category:   Integration | Analytics | Security | Performance
+ *   deal_stage: Prospect | Qualified | Negotiation
  */
-async function seedDemoAccounts(
-  admin: any,
-  orgId: string,
-  userId: string
-) {
+async function seedDemoData(admin: any, orgId: string, userId: string) {
   // ── Accounts ──
   const { data: accounts, error: accErr } = await admin
     .from('accounts')
@@ -150,20 +152,18 @@ async function seedDemoAccounts(
   console.log(`[demo] seeded ${accounts.length} accounts`);
 
   // ── Feature Requests ──
-  // Schema: organization_id, account_id, feature_name, category, deal_stage,
-  //         notes, submitted_by, source, confidence, confidence_note, blocker_score
   const featureRows = [
     {
       organization_id: orgId,
       account_id: byName['Acme Corp'],
       feature_name: 'Salesforce CRM Integration',
       category: 'Integration',
-      deal_stage: 'backlog',
-      notes: 'Team lives in SFDC — manually copying notes is killing adoption. Hard requirement for Q2 renewal.',
+      deal_stage: 'Negotiation',
+      notes: 'Team lives in SFDC — manually copying notes is killing adoption. Hard requirement for Q2 renewal. $240K ARR at risk.',
       submitted_by: userId,
-      source: 'Sales Call',
-      confidence: null,
-      confidence_note: 'VP of Sales confirmed this is a blocker',
+      source: 'manual',
+      confidence: 5,
+      confidence_note: 'VP of Sales confirmed this is a deal blocker',
       blocker_score: 5,
     },
     {
@@ -171,11 +171,11 @@ async function seedDemoAccounts(
       account_id: byName['Acme Corp'],
       feature_name: 'Bulk Data Export (CSV)',
       category: 'Analytics',
-      deal_stage: 'backlog',
+      deal_stage: 'Qualified',
       notes: 'Wants to pull data into BI tool for exec reporting. Would save hours every sprint planning session.',
       submitted_by: userId,
-      source: 'Sales Call',
-      confidence: null,
+      source: 'manual',
+      confidence: 3,
       confidence_note: 'Mentioned in QBR but not a deal blocker',
       blocker_score: 3,
     },
@@ -184,11 +184,11 @@ async function seedDemoAccounts(
       account_id: byName['TechFlow Inc'],
       feature_name: 'Salesforce CRM Integration',
       category: 'Integration',
-      deal_stage: 'backlog',
-      notes: 'Salesforce integration is a hard requirement for Q2 renewal conversation.',
+      deal_stage: 'Negotiation',
+      notes: 'CRM integration is a hard requirement for Q2 renewal. $180K ARR account — CTO stated this directly.',
       submitted_by: userId,
-      source: 'Email',
-      confidence: null,
+      source: 'manual',
+      confidence: 5,
       confidence_note: 'CTO stated this directly in renewal email',
       blocker_score: 5,
     },
@@ -197,11 +197,11 @@ async function seedDemoAccounts(
       account_id: byName['TechFlow Inc'],
       feature_name: 'Slack Notifications',
       category: 'Integration',
-      deal_stage: 'shipped',
-      notes: 'Would love Slack notifications when a feature they requested moves to In Progress.',
+      deal_stage: 'Prospect',
+      notes: 'Would love Slack notifications when a feature they requested moves to In Progress. Team is fully async.',
       submitted_by: userId,
-      source: 'Sales Call',
-      confidence: null,
+      source: 'manual',
+      confidence: 2,
       confidence_note: 'Nice-to-have, not a blocker',
       blocker_score: 2,
     },
@@ -210,12 +210,12 @@ async function seedDemoAccounts(
       account_id: byName['DataStar'],
       feature_name: 'Salesforce CRM Integration',
       category: 'Integration',
-      deal_stage: 'backlog',
-      notes: 'If we can\'t connect their CRM by end of quarter, they\'ll look at other tools.',
+      deal_stage: 'Negotiation',
+      notes: 'If we can\'t connect their CRM by end of quarter, they\'ll look at other tools. $95K at risk — churn threat.',
       submitted_by: userId,
-      source: 'Sales Call',
-      confidence: null,
-      confidence_note: 'Churn risk — account manager flagged urgency',
+      source: 'manual',
+      confidence: 5,
+      confidence_note: 'Account manager flagged explicit churn risk',
       blocker_score: 5,
     },
     {
@@ -223,12 +223,12 @@ async function seedDemoAccounts(
       account_id: byName['DataStar'],
       feature_name: 'Bulk Data Export (CSV)',
       category: 'Analytics',
-      deal_stage: 'planned',
-      notes: 'Need bulk export — want to pull data into their BI tool for exec reporting.',
+      deal_stage: 'Qualified',
+      notes: 'Need bulk export to pull data into their BI tool for exec reporting. Requested twice in the last month.',
       submitted_by: userId,
-      source: 'Support Ticket',
-      confidence: null,
-      confidence_note: 'Submitted via support, not directly from decision maker',
+      source: 'manual',
+      confidence: 4,
+      confidence_note: 'Submitted via support, repeated request',
       blocker_score: 3,
     },
     {
@@ -236,58 +236,62 @@ async function seedDemoAccounts(
       account_id: byName['BuildBright'],
       feature_name: 'Custom Reporting Dashboard',
       category: 'Analytics',
-      deal_stage: 'shipped',
-      notes: 'A configurable dashboard would let them share product priorities with their board.',
+      deal_stage: 'Prospect',
+      notes: 'A configurable dashboard would let them share product priorities with their board. $55K account.',
       submitted_by: userId,
-      source: 'Sales Call',
-      confidence: null,
+      source: 'manual',
+      confidence: 2,
       confidence_note: 'Board presentation prep drove the request',
       blocker_score: 2,
     },
     {
       organization_id: orgId,
       account_id: byName['BuildBright'],
-      feature_name: 'Slack Notifications',
-      category: 'Integration',
-      deal_stage: 'backlog',
-      notes: 'Team is fully async and misses email notifications. Slack would be huge for them.',
+      feature_name: 'SSO / SAML Integration',
+      category: 'Security',
+      deal_stage: 'Qualified',
+      notes: 'Security team requires SSO before they can approve the tool for broader org rollout.',
       submitted_by: userId,
-      source: 'Sales Call',
-      confidence: null,
-      confidence_note: 'Mentioned casually, not a formal request',
-      blocker_score: 1,
-    },
-    {
-      organization_id: orgId,
-      account_id: byName['SalesCo'],
-      feature_name: 'Slack Notifications',
-      category: 'Integration',
-      deal_stage: 'backlog',
-      notes: 'PM wants Slack alerts when feedback is classified. Wants to stay in the loop.',
-      submitted_by: userId,
-      source: 'Email',
-      confidence: null,
-      confidence_note: 'PM sent a follow-up email about this',
-      blocker_score: 2,
+      source: 'manual',
+      confidence: 4,
+      confidence_note: 'Came from security review, not sales conversation',
+      blocker_score: 4,
     },
     {
       organization_id: orgId,
       account_id: byName['SalesCo'],
       feature_name: 'HubSpot Integration',
       category: 'Integration',
-      deal_stage: 'planned',
-      notes: 'They use HubSpot, not Salesforce. Need an equivalent integration for their CRM.',
+      deal_stage: 'Qualified',
+      notes: 'They use HubSpot, not Salesforce. Need an equivalent CRM integration for their workflow.',
       submitted_by: userId,
-      source: 'Sales Call',
-      confidence: null,
+      source: 'manual',
+      confidence: 4,
       confidence_note: 'Brought up as a requirement during initial demo',
       blocker_score: 4,
     },
+    {
+      organization_id: orgId,
+      account_id: byName['SalesCo'],
+      feature_name: 'Dashboard Load Time Optimization',
+      category: 'Performance',
+      deal_stage: 'Prospect',
+      notes: 'PM noticed the dashboard takes 3-4 seconds to load on slow connections. Wants sub-second loads.',
+      submitted_by: userId,
+      source: 'manual',
+      confidence: 2,
+      confidence_note: 'PM mentioned casually, not a formal request',
+      blocker_score: 1,
+    },
   ];
 
-  const { data: frData, error: frErr } = await admin.from('feature_requests').insert(featureRows).select('id');
+  const { data: frData, error: frErr } = await admin
+    .from('feature_requests')
+    .insert(featureRows)
+    .select('id');
+
   if (frErr) throw new Error(`seed feature_requests: ${frErr.message}`);
-  if (!frData || frData.length === 0) throw new Error(`seed feature_requests: insert returned 0 rows (RLS may be blocking)`);
+  if (!frData || frData.length === 0) throw new Error(`seed feature_requests: insert returned 0 rows`);
 
   console.log(`[demo] seeded ${frData.length} feature requests`);
 }

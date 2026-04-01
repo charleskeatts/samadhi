@@ -132,6 +132,7 @@ body::before {
 }
 .input:focus { border-color: var(--border-bright); }
 .input::placeholder { color: var(--ink-muted); }
+textarea.input { font-family: 'DM Mono', monospace; line-height: 1.5; }
 
 /* select arrow */
 select.input {
