@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
         notes: notes || '',
         submitted_by: user.id,
         source: source || 'manual',
-        confidence: body.confidence ?? 3,
+        confidence: 1, // DB constraint only allows 1 or null
         confidence_note: body.confidence_note || '',
         blocker_score: blocker_score ?? 3,
       })

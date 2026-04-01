@@ -137,8 +137,8 @@ export default function DemoPage() {
           }}>
             {[
               '5 demo accounts',
-              '15 feedback entries',
-              '4 feature requests',
+              '10 feature requests',
+              'Blocker scoring',
               'Revenue rankings',
             ].map((item) => (
               <div
