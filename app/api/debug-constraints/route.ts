@@ -7,95 +7,112 @@ import { NextResponse } from 'next/server';
 export async function GET() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
   const admin = createClient(supabaseUrl, serviceRoleKey);
 
-  // Strategy: Try to get the constraint text by querying information_schema
-  // or pg_catalog via the Supabase REST API (which proxies to PostgREST)
+  // Approach 1: Try to query using the PostgREST schema cache endpoint
+  // Supabase exposes /rest/v1/ which is PostgREST
+  
+  const results: Record<string, any> = {};
 
-  // First, try to read the actual error message more carefully
-  // by inserting with a deliberately wrong value
+  // Approach 2: Try calling a Postgres function if one exists
+  // Create a temporary function to read constraint defs
+  try {
+    // First, try to create an RPC function via SQL
+    const createFnRes = await fetch(`${supabaseUrl}/rest/v1/rpc/get_check_constraints`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': serviceRoleKey,
+        'Authorization': `Bearer ${serviceRoleKey}`,
+        'Prefer': 'return=representation',
+      },
+      body: JSON.stringify({}),
+    });
+    results.rpcAttempt = {
+      status: createFnRes.status,
+      data: await createFnRes.json(),
+    };
+  } catch (err: any) {
+    results.rpcAttempt = { error: err.message };
+  }
+
+  // Approach 3: Try to get the OpenAPI spec which may include enum values
+  try {
+    const openApiRes = await fetch(`${supabaseUrl}/rest/v1/`, {
+      headers: {
+        'apikey': serviceRoleKey,
+        'Authorization': `Bearer ${serviceRoleKey}`,
+      },
+    });
+    const spec = await openApiRes.json();
+    // Extract feature_requests column definitions
+    const frDef = spec?.definitions?.feature_requests;
+    if (frDef) {
+      results.openApiFeatureRequests = frDef;
+    } else {
+      // Try to find it in paths
+      results.openApiPaths = Object.keys(spec?.paths || {}).filter(p => p.includes('feature'));
+      results.openApiDefinitionKeys = Object.keys(spec?.definitions || {});
+    }
+  } catch (err: any) {
+    results.openApiError = err.message;
+  }
+
+  // Approach 4: Additional targeted brute force - focus on what we know
+  // The constraint was probably created by Claude Code. Look for patterns
+  // that a developer would use. Since "Negotiation" works but "Discovery" doesn't,
+  // maybe it's very specific SFDC stage names or completely custom.
   const orgId = (await admin.from('organizations').select('id').limit(1)).data?.[0]?.id;
   const accountId = (await admin.from('accounts').select('id').limit(1)).data?.[0]?.id;
 
-  if (!orgId || !accountId) {
-    return NextResponse.json({ error: 'No org or account found' });
-  }
-
-  // Get the raw error for deal_stage constraint
-  const { error: rawError } = await admin.from('feature_requests').insert({
-    organization_id: orgId, account_id: accountId,
-    feature_name: `constraint-test`, category: 'Integration',
-    deal_stage: 'DELIBERATELY_INVALID_VALUE_12345', blocker_score: 1,
-  });
-
-  // Now try many more deal_stage patterns - lowercase, snake_case, etc.
-  const dsValues = [
-    // lowercase versions
-    'negotiation', 'prospecting', 'qualification', 'discovery',
-    'evaluation', 'proposal', 'closed_won', 'closed_lost',
-    'demo', 'active', 'new_business', 'expansion', 'renewal',
-    'at_risk', 'backlog', 'planned', 'in_progress', 'shipped',
-    'won', 'lost', 'open', 'closed', 'pending', 'stale',
-    // UPPER_CASE
-    'NEGOTIATION', 'PROSPECTING', 'QUALIFICATION', 'DISCOVERY',
-    // MixedCase / CRM-style
-    'New Business', 'Active', 'Expansion', 'Renewal', 'At Risk',
-    'In Progress', 'Closed Won', 'Closed Lost',
-    'Backlog', 'Planned', 'Shipped', 'Stale', 'Won', 'Lost',
-    'Open', 'Closed', 'Pending',
-    // Salesforce standard stages
-    'Value Proposition', 'Id. Decision Makers', 'Perception Analysis',
-    'Needs Analysis',
-    // Short codes
-    'new', 'active', 'risk', 'churn',
-    // HubSpot stages
-    'appointmentscheduled', 'qualifiedtobuy', 'presentationscheduled',
-    'decisionmakerboughtin', 'contractsent', 'closedwon', 'closedlost',
-    // Pipeline stages
-    'pipeline', 'forecast', 'commit', 'upside', 'omitted',
-    // Product stages
-    'triage', 'review', 'approved', 'rejected', 'deferred',
-    'Todo', 'Doing', 'Done', 'Blocked',
-    'todo', 'doing', 'done', 'blocked',
-    // snake_case product stages
-    'new_business', 'at_risk', 'in_progress',
-    'closed_won', 'closed_lost',
+  const moreStages = [
+    // Maybe the constraint includes specific product management stages
+    'Submitted', 'Under Review', 'Approved', 'In Development', 'Released',
+    'Declined', 'Deferred', 'Reviewing', 'Building', 'Testing',
+    'Launching', 'Launched', 'Live',
+    // Deal-specific (maybe exact match with specific format)
+    'New', 'Working', 'Nurturing', 'Qualified', 'Converted',
+    'Unqualified', 'Lost', 'Closed',
+    // CamelCase/PascalCase deal stages
+    'InitialContact', 'QualifyLead', 'SendProposal',
+    'HandleObjections', 'CloseTheDeal',
+    // Pipeline terms
+    'Pipeline', 'Commit', 'Best Case', 'Upside', 'Omitted',
+    // Maybe simple status words that match PascalCase exactly
+    'Identified', 'Validated', 'Prioritized', 'Scheduled', 'Completed',
+    'Assessment', 'Selection', 'Decision', 'Commitment', 'Onboarded',
   ];
 
-  const dsResults: Record<string, string> = {};
-  for (const ds of dsValues) {
-    const { error } = await admin.from('feature_requests').insert({
-      organization_id: orgId, account_id: accountId,
-      feature_name: `sweep2-${ds}`, category: 'Integration',
-      deal_stage: ds, blocker_score: 1,
-    });
-    if (error) {
-      dsResults[ds] = error.message.includes('deal_stage')
-        ? 'REJECTED'
-        : `OTHER: ${error.message.slice(0, 120)}`;
-    } else {
-      dsResults[ds] = 'ACCEPTED';
-      await admin.from('feature_requests').delete()
-        .eq('feature_name', `sweep2-${ds}`)
-        .eq('organization_id', orgId);
+  const stageResults: Record<string, string> = {};
+  if (orgId && accountId) {
+    for (const ds of moreStages) {
+      const { error } = await admin.from('feature_requests').insert({
+        organization_id: orgId, account_id: accountId,
+        feature_name: `sweep4-${ds}`, category: 'Integration',
+        deal_stage: ds, blocker_score: 1,
+      });
+      if (error) {
+        stageResults[ds] = 'REJECTED';
+      } else {
+        stageResults[ds] = 'ACCEPTED';
+        await admin.from('feature_requests').delete()
+          .eq('feature_name', `sweep4-${ds}`)
+          .eq('organization_id', orgId);
+      }
     }
   }
 
-  const accepted = Object.entries(dsResults)
+  const newAccepted = Object.entries(stageResults)
     .filter(([_, v]) => v === 'ACCEPTED')
     .map(([k]) => k);
 
   return NextResponse.json({
-    rawErrorMessage: rawError?.message || 'No error',
-    rawErrorDetails: rawError?.details || 'No details',
-    rawErrorHint: (rawError as any)?.hint || 'No hint',
-    rawErrorCode: (rawError as any)?.code || 'No code',
-    previouslyFound: {
+    knownValid: {
       categories: ['Integration', 'Analytics', 'Security', 'Performance'],
       dealStages: ['Negotiation'],
     },
-    newAccepted: accepted,
-    allNewResults: dsResults,
+    results,
+    newAccepted,
+    stageResults,
   });
 }
