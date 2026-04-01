@@ -285,8 +285,9 @@ async function seedDemoAccounts(
     },
   ];
 
-  const { error: frErr } = await admin.from('feature_requests').insert(featureRows);
+  const { data: frData, error: frErr } = await admin.from('feature_requests').insert(featureRows).select('id');
   if (frErr) throw new Error(`seed feature_requests: ${frErr.message}`);
+  if (!frData || frData.length === 0) throw new Error(`seed feature_requests: insert returned 0 rows (RLS may be blocking)`);
 
-  console.log(`[demo] seeded ${featureRows.length} feature requests`);
+  console.log(`[demo] seeded ${frData.length} feature requests`);
 }
