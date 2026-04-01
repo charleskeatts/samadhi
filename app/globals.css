@@ -6,20 +6,23 @@
 
 /* ── DESIGN TOKENS ── */
 :root {
-  --bg:           #080806;
-  --bg-card:      #0e0c0a;
-  --bg-input:     #0a0806;
-  --border:       #2a2620;
-  --border-bright:#4a4030;
-  --ink:          #f5f2ee;
-  --ink-dim:      #c8c0b4;
-  --ink-muted:    #6a6058;
-  --gold:         #e8b84b;
-  --gold-dim:     #c8982b;
-  --orange:       #f07830;
-  --orange-dim:   #c85820;
-  --green:        #4aaa6a;
-  --red:          #cc5548;
+  --bg:           #0b1a2e;
+  --bg-card:      #0f2038;
+  --bg-input:     #0a1628;
+  --border:       #1a3050;
+  --border-bright:#2a4a70;
+  --ink:          #edf2f8;
+  --ink-dim:      #b0c4d8;
+  --ink-muted:    #5a7a98;
+  --accent:       #38bdf8;
+  --accent-dim:   #2196d4;
+  --accent-glow:  rgba(56, 189, 248, 0.15);
+  --gold:         #38bdf8;
+  --gold-dim:     #2196d4;
+  --orange:       #f59e0b;
+  --orange-dim:   #d97706;
+  --green:        #34d399;
+  --red:          #f87171;
 }
 
 /* ── RESET & BASE ── */
@@ -36,6 +39,16 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── AI LOGO HIGHLIGHT ── */
+.logo-ai {
+  background: linear-gradient(135deg, #38bdf8, #818cf8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 600;
+  filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.4));
 }
 
 /* Warm scrollbars */
@@ -90,7 +103,7 @@ body::before {
   border-color: var(--gold);
   color: var(--gold);
 }
-.btn-primary:hover { background: rgba(232, 184, 75, 0.1); color: #f0d080; }
+.btn-primary:hover { background: rgba(56, 189, 248, 0.12); color: #7dd3fc; }
 
 .btn-secondary {
   border-color: var(--border-bright);
@@ -102,7 +115,7 @@ body::before {
   border-color: var(--red);
   color: var(--red);
 }
-.btn-danger:hover { background: rgba(204, 85, 72, 0.1); }
+.btn-danger:hover { background: rgba(248, 113, 113, 0.1); }
 
 .input {
   width: 100%;
@@ -122,7 +135,7 @@ body::before {
 
 /* select arrow */
 select.input {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236a6058'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235a7a98'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 0.75rem center;
   padding-right: 2rem;
@@ -185,7 +198,7 @@ select.input {
   font-size: 12.5px;
   vertical-align: middle;
 }
-.tbl tr:hover td { background: rgba(255,255,255,0.015); }
+.tbl tr:hover td { background: rgba(56, 189, 248, 0.03); }
 
 /* ── SECTION DIVIDER ── */
 .section-rule {

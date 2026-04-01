@@ -82,7 +82,7 @@ export default function InsightsPage() {
                     textAlign: 'left',
                     padding: '0.85rem 1rem',
                     borderBottom: '1px solid var(--border)',
-                    background: selectedFeature?.id === feature.id ? 'rgba(232,184,75,0.06)' : 'transparent',
+                    background: selectedFeature?.id === feature.id ? 'rgba(56,189,248,0.06)' : 'transparent',
                     borderLeft: selectedFeature?.id === feature.id ? '2px solid var(--gold)' : '2px solid transparent',
                     cursor: 'pointer',
                     transition: 'all 0.15s',

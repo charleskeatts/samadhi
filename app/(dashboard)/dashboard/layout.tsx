@@ -31,7 +31,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <aside style={{
         width: 220,
         minWidth: 220,
-        background: '#060504',
+        background: '#081428',
         borderRight: '1px solid var(--border)',
         display: 'flex',
         flexDirection: 'column',
@@ -54,7 +54,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             color: 'var(--ink)',
             lineHeight: 1,
           }}>
-            CL<span style={{ color: 'var(--gold)' }}>A</span>IRIO
+            CL<span className="logo-ai">AI</span>RIO
           </div>
           <div style={{
             fontSize: '8px',
@@ -84,7 +84,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   letterSpacing: '0.16em',
                   textTransform: 'uppercase',
                   color: active ? 'var(--gold)' : 'var(--ink-muted)',
-                  background: active ? 'rgba(232,184,75,0.07)' : 'transparent',
+                  background: active ? 'rgba(56,189,248,0.08)' : 'transparent',
                   borderLeft: active ? '2px solid var(--gold)' : '2px solid transparent',
                   transition: 'all 0.15s',
                   textDecoration: 'none',
@@ -92,7 +92,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 onMouseEnter={(e) => {
                   if (!active) {
                     (e.currentTarget as HTMLElement).style.color = 'var(--ink-dim)';
-                    (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)';
+                    (e.currentTarget as HTMLElement).style.background = 'rgba(56,189,248,0.05)';
                   }
                 }}
                 onMouseLeave={(e) => {
@@ -156,14 +156,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         left: 0,
         right: 0,
         zIndex: 50,
-        background: '#060504',
+        background: '#081428',
         borderBottom: '1px solid var(--border)',
         padding: '0.9rem 1.2rem',
         alignItems: 'center',
         justifyContent: 'space-between',
       }} className="mobile-hdr">
         <span style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: '1.3rem', fontWeight: 300, letterSpacing: '0.22em', color: 'var(--ink)' }}>
-          CL<span style={{ color: 'var(--gold)' }}>A</span>IRIO
+          CL<span className="logo-ai">AI</span>RIO
         </span>
         <button
           onClick={() => setOpen(!open)}

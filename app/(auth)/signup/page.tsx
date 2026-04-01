@@ -69,7 +69,7 @@ export default function SignupPage() {
             color: 'var(--ink)',
             lineHeight: 1,
           }}>
-            CL<span style={{ color: 'var(--gold)' }}>A</span>IRIO
+            CL<span className="logo-ai">AI</span>RIO
           </div>
           <div style={{
             fontSize: '9px',
@@ -159,7 +159,7 @@ export default function SignupPage() {
             </div>
 
             {error && (
-              <div style={{ padding: '0.6rem 0.8rem', border: '1px solid #5a2020', background: '#120808', fontSize: '10px', color: '#ee8870', letterSpacing: '0.06em' }}>
+              <div style={{ padding: '0.6rem 0.8rem', border: '1px solid #3a1515', background: '#1a0a0a', fontSize: '10px', color: '#f87171', letterSpacing: '0.06em' }}>
                 {error}
               </div>
             )}
