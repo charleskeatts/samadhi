@@ -32,8 +32,8 @@ export async function GET() {
     .select('*')
     .limit(1);
 
-  // Also try to read the PostgREST OpenAPI spec for the profiles table
-  let openApiColumns: string[] = [];
+  // Read the PostgREST OpenAPI spec for ALL tables
+  let allTables: Record<string, string[]> = {};
   try {
     const res = await fetch(`${supabaseUrl}/rest/v1/`, {
       headers: {
@@ -42,11 +42,15 @@ export async function GET() {
       },
     });
     const spec = await res.json();
-    if (spec?.definitions?.profiles?.properties) {
-      openApiColumns = Object.keys(spec.definitions.profiles.properties);
+    if (spec?.definitions) {
+      for (const [table, def] of Object.entries(spec.definitions as Record<string, any>)) {
+        if (def?.properties) {
+          allTables[table] = Object.keys(def.properties);
+        }
+      }
     }
   } catch (e) {
-    openApiColumns = [`fetch failed: ${e}`];
+    allTables = { error: [`fetch failed: ${e}`] };
   }
 
   return NextResponse.json({
@@ -56,6 +60,6 @@ export async function GET() {
       error: sampleError?.message,
       keys: sampleRow?.[0] ? Object.keys(sampleRow[0]) : [],
     },
-    postgrest_openapi_columns: openApiColumns,
+    all_tables: allTables,
   });
 }
