@@ -7,67 +7,77 @@ export async function GET() {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
-  // Get a valid org and account to reference
   const { data: orgs } = await admin.from('organizations').select('id').limit(1);
   const { data: accts } = await admin.from('accounts').select('id').limit(1);
 
   if (!orgs?.[0] || !accts?.[0]) {
-    return NextResponse.json({ error: 'No org or account found to test with' });
+    return NextResponse.json({ error: 'No org or account found' });
   }
 
   const orgId = orgs[0].id;
   const accountId = accts[0].id;
 
-  // Test category values
-  const categoryValues = ['Integration', 'Analytics', 'feature_request', 'bug_report', 'churn_risk', 'competitive_intel', 'pricing_concern', 'general', 'uncategorized', 'test'];
-  const categoryResults: Record<string, string> = {};
+  // Step 1: Find a valid deal_stage by trying values with a simple category
+  const dealStageValues = ['discovery', 'evaluation', 'negotiation', 'closed_won', 'closed_lost', 'active', 'backlog', 'planned', 'in_progress', 'shipped', 'new', 'open', 'won', 'lost', 'prospect', 'demo', 'trial', 'onboarding'];
+  const dealStageResults: Record<string, string> = {};
 
-  for (const cat of categoryValues) {
+  for (const ds of dealStageValues) {
     const { error } = await admin
       .from('feature_requests')
       .insert({
         organization_id: orgId,
         account_id: accountId,
-        feature_name: `cat-test-${cat}`,
-        category: cat,
+        feature_name: `ds-test-${ds}`,
+        category: 'general',
+        deal_stage: ds,
         blocker_score: 1,
       });
     
     if (error) {
-      categoryResults[cat] = `REJECTED: ${error.message}`;
+      dealStageResults[ds] = `REJECTED: ${error.message}`;
     } else {
-      categoryResults[cat] = 'ACCEPTED';
-      await admin.from('feature_requests').delete().eq('feature_name', `cat-test-${cat}`).eq('organization_id', orgId);
+      dealStageResults[ds] = 'ACCEPTED';
+      await admin.from('feature_requests').delete().eq('feature_name', `ds-test-${ds}`).eq('organization_id', orgId);
     }
   }
 
-  // Test deal_stage values (use a known-good category)
-  const goodCategory = Object.entries(categoryResults).find(([_, v]) => v === 'ACCEPTED')?.[0];
-  const dealStageValues = ['discovery', 'evaluation', 'negotiation', 'closed_won', 'closed_lost', 'active', 'backlog', 'planned', 'in_progress', 'shipped', 'Renewal', 'Active', 'At Risk', 'Expansion', 'New Business', null];
-  const dealStageResults: Record<string, string> = {};
+  // Step 2: Find a valid category using a known-good deal_stage
+  const goodDealStage = Object.entries(dealStageResults).find(([_, v]) => v === 'ACCEPTED')?.[0];
+  const categoryValues = ['Integration', 'Analytics', 'feature_request', 'bug_report', 'churn_risk', 'competitive_intel', 'pricing_concern', 'general', 'uncategorized', 'enhancement', 'infrastructure', 'ux', 'security'];
+  const categoryResults: Record<string, string> = {};
 
-  if (goodCategory) {
-    for (const ds of dealStageValues) {
-      const key = ds === null ? 'null' : ds;
+  if (goodDealStage) {
+    for (const cat of categoryValues) {
       const { error } = await admin
         .from('feature_requests')
         .insert({
           organization_id: orgId,
           account_id: accountId,
-          feature_name: `ds-test-${key}`,
-          category: goodCategory,
-          deal_stage: ds,
+          feature_name: `cat-test-${cat}`,
+          category: cat,
+          deal_stage: goodDealStage,
           blocker_score: 1,
         });
       
       if (error) {
-        dealStageResults[key] = `REJECTED: ${error.message}`;
+        categoryResults[cat] = `REJECTED: ${error.message}`;
       } else {
-        dealStageResults[key] = 'ACCEPTED';
-        await admin.from('feature_requests').delete().eq('feature_name', `ds-test-${key}`).eq('organization_id', orgId);
+        categoryResults[cat] = 'ACCEPTED';
+        await admin.from('feature_requests').delete().eq('feature_name', `cat-test-${cat}`).eq('organization_id', orgId);
       }
     }
   }
 
-  return NextResponse.json({ categoryResults, goodCategory, dealStageResults });
+  // Step 3: Also get existing data to see what values are already used
+  const { data: existing } = await admin
+    .from('feature_requests')
+    .select('category, deal_stage')
+    .limit(20);
+
+  return NextResponse.json({
+    goodDealStage,
+    dealStageResults,
+    categoryResults,
+    existingData: existing,
+  });
 }
