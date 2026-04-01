@@ -347,9 +347,9 @@ export default function BacklogPage() {
                       <div style={{ fontSize: '11px', color: 'var(--ink-muted)', lineHeight: 1.6 }}>
                         {f.notes || 'No notes provided.'}
                       </div>
-                      {f.confidence && (
+                      {f.confidence != null && (
                         <div style={{ fontSize: '9px', color: 'var(--gold-dim)', marginTop: '0.5rem' }}>
-                          Confidence: {f.confidence} {f.confidence_note ? `— ${f.confidence_note}` : ''}
+                          Confidence: {f.confidence}/5 {f.confidence_note ? `— ${f.confidence_note}` : ''}
                         </div>
                       )}
                     </div>

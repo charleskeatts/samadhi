@@ -181,7 +181,7 @@ export default function InsightsPage() {
                       Confidence
                     </div>
                     <div style={{ fontSize: '12px', color: 'var(--ink-dim)' }}>
-                      {selectedFeature.confidence ?? 'Not rated'}
+                      {selectedFeature.confidence != null ? `${selectedFeature.confidence}/5` : 'Not rated'}
                     </div>
                     {selectedFeature.confidence_note && (
                       <div style={{ fontSize: '10px', color: 'var(--ink-muted)', marginTop: '0.2rem' }}>

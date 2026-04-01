@@ -59,7 +59,7 @@ export interface FeatureRequest {
   notes: string | null;
   submitted_by: string | null;
   source: string | null;
-  confidence: string | null;
+  confidence: number | null;
   confidence_note: string | null;
   blocker_score: number;
   created_at: string;
