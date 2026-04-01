@@ -10,7 +10,6 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import { FeatureRequestWithAccount } from '@/types';
 import { formatARR, timeAgo } from '@/lib/utils';
 
@@ -46,21 +45,14 @@ export default function FeedbackPage() {
   const [accountError, setAccountError] = useState('');
 
   const fetchData = useCallback(async () => {
-    const supabase = createClient();
     try {
       const [featuresRes, accountsRes] = await Promise.all([
-        supabase
-          .from('feature_requests')
-          .select('*, accounts:account_id (id, name, arr)')
-          .order('created_at', { ascending: false }),
-        supabase
-          .from('accounts')
-          .select('id, name, arr')
-          .order('arr', { ascending: false }),
+        fetch('/api/features').then(r => r.json()),
+        fetch('/api/accounts').then(r => r.json()),
       ]);
 
-      setFeatures((featuresRes.data as FeatureRequestWithAccount[]) || []);
-      setAccounts((accountsRes.data as Account[]) || []);
+      setFeatures(Array.isArray(featuresRes) ? featuresRes : []);
+      setAccounts(Array.isArray(accountsRes) ? accountsRes : []);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
