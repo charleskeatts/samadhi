@@ -3,45 +3,33 @@
  * GET:  Fetch all feature requests for the org
  * POST: Create a new feature request
  *
+ * Uses getAuthProfile() which provides a service-role admin client
+ * to bypass RLS issues (the DB RLS policies reference the old org_id column).
+ *
  * VALID ENUMS:
  *   category:   Integration | Analytics | Security | Performance
  *   deal_stage: Prospect | Qualified | Negotiation
  */
 
-import { createClient } from '@/lib/supabase/server';
+import { getAuthProfile } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-    const supabase = await createClient();
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
+    const auth = await getAuthProfile();
+    if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('organization_id')
-      .eq('id', user.id)
-      .single();
-
-    if (!profile) {
-      return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
-    }
-
-    const { data: features, error } = await supabase
+    const { data: features, error } = await auth.admin
       .from('feature_requests')
       .select('*, accounts:account_id (id, name, arr)')
-      .eq('organization_id', profile.organization_id)
-      .order('blocker_score', { ascending: false });
+      .eq('organization_id', auth.orgId)
+      .order('created_at', { ascending: false });
 
     if (error) throw error;
 
-    return NextResponse.json(features);
+    return NextResponse.json(features || []);
   } catch (error) {
     console.error('Error fetching features:', error);
     return NextResponse.json({ error: 'Failed to fetch features' }, { status: 500 });
@@ -50,24 +38,9 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
+    const auth = await getAuthProfile();
+    if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('organization_id')
-      .eq('id', user.id)
-      .single();
-
-    if (!profile) {
-      return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
     }
 
     const body = await request.json();
@@ -100,18 +73,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { data: feature, error } = await supabase
+    const { data: feature, error } = await auth.admin
       .from('feature_requests')
       .insert({
-        organization_id: profile.organization_id,
+        organization_id: auth.orgId,
         account_id,
         feature_name,
         category,
         deal_stage,
         notes: notes || '',
-        submitted_by: user.id,
+        submitted_by: auth.user.id,
         source: source || 'manual',
-        confidence: 1, // DB constraint only allows 1 or null
+        confidence: 1,
         confidence_note: body.confidence_note || '',
         blocker_score: blocker_score ?? 3,
       })

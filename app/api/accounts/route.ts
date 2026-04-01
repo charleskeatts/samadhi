@@ -2,42 +2,30 @@
  * Accounts API endpoint
  * GET:  Fetch all accounts for the org
  * POST: Create a new account
+ *
+ * Uses getAuthProfile() which provides a service-role admin client
+ * to bypass RLS issues (the DB RLS policies reference the old org_id column).
  */
 
-import { createClient } from '@/lib/supabase/server';
+import { getAuthProfile } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-    const supabase = await createClient();
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
+    const auth = await getAuthProfile();
+    if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('organization_id')
-      .eq('id', user.id)
-      .single();
-
-    if (!profile) {
-      return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
-    }
-
-    const { data: accounts, error } = await supabase
+    const { data: accounts, error } = await auth.admin
       .from('accounts')
       .select('id, name, arr, crm_source, created_at')
-      .eq('organization_id', profile.organization_id)
+      .eq('organization_id', auth.orgId)
       .order('arr', { ascending: false });
 
     if (error) throw error;
 
-    return NextResponse.json(accounts);
+    return NextResponse.json(accounts || []);
   } catch (error) {
     console.error('Error fetching accounts:', error);
     return NextResponse.json({ error: 'Failed to fetch accounts' }, { status: 500 });
@@ -46,24 +34,9 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
+    const auth = await getAuthProfile();
+    if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('organization_id')
-      .eq('id', user.id)
-      .single();
-
-    if (!profile) {
-      return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
     }
 
     const body = await request.json();
@@ -73,10 +46,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Account name is required' }, { status: 400 });
     }
 
-    const { data: account, error } = await supabase
+    const { data: account, error } = await auth.admin
       .from('accounts')
       .insert({
-        organization_id: profile.organization_id,
+        organization_id: auth.orgId,
         name,
         arr: arr || 0,
         crm_source: 'manual',
