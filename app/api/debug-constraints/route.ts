@@ -8,16 +8,7 @@ export async function GET() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
-  // Try using raw SQL via the PostgREST API / pg_catalog
-  // Method: use fetch to directly query Supabase's SQL endpoint
-  const sqlQuery = `
-    SELECT conname, pg_get_constraintdef(oid) as constraint_def
-    FROM pg_constraint
-    WHERE conrelid = 'public.feature_requests'::regclass;
-  `;
-
-  // Supabase exposes a SQL endpoint at /rest/v1/rpc or via the management API
-  // But we can also try querying pg_catalog views through PostgREST
+  // Using brute-force approach since we can't query pg_constraint directly
   const admin = createClient(supabaseUrl, serviceRoleKey);
 
   // Approach: try to extract constraint text by trying lots of values quickly
