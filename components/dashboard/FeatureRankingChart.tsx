@@ -1,6 +1,7 @@
 /**
  * Feature ranking chart
- * Horizontal bar chart showing top features by revenue weight
+ * Horizontal bar chart showing top features by account ARR
+ * Uses actual DB schema: FeatureRequestWithAccount (joined with accounts).
  */
 
 'use client';
@@ -14,9 +15,9 @@ export default function FeatureRankingChart({
   maxItems = 10,
 }: FeatureRankingChartProps) {
   const chartData = features.slice(0, maxItems).map((feature) => ({
-    name: feature.title.substring(0, 30),
-    revenue: feature.total_revenue_weight,
-    accounts: feature.account_count,
+    name: feature.feature_name.substring(0, 30),
+    revenue: feature.accounts?.arr ?? 0,
+    account: feature.accounts?.name ?? 'Unknown',
   }));
 
   const CustomTooltip = ({ active, payload }: any) => {
@@ -34,7 +35,7 @@ export default function FeatureRankingChart({
             {formatARR(data.revenue)}
           </p>
           <p style={{ color: 'var(--ink-muted)', fontSize: '10px', marginTop: '0.2rem' }}>
-            {data.accounts} account{data.accounts !== 1 ? 's' : ''}
+            {data.account}
           </p>
         </div>
       );

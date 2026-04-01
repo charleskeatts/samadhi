@@ -1,15 +1,15 @@
 /**
- * Custom hook for feedback operations
- * Handles fetching feedback and submitting new feedback
+ * Custom hook for feedback operations - STUB
+ * The "feedback" table does not exist in the actual DB schema.
+ * This hook returns empty data to avoid breaking any remaining imports.
  */
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { FeedbackWithAccount } from '@/types';
+import { useCallback } from 'react';
 
 interface UseFeedbackReturn {
-  feedback: FeedbackWithAccount[];
+  feedback: any[];
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
@@ -17,72 +17,25 @@ interface UseFeedbackReturn {
     account_name: string;
     arr: number;
     raw_text: string;
-  }) => Promise<FeedbackWithAccount>;
+  }) => Promise<any>;
 }
 
 export function useFeedback(): UseFeedbackReturn {
-  const [feedback, setFeedback] = useState<FeedbackWithAccount[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Fetch all feedback
   const refetch = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await fetch('/api/feedback');
-      if (!response.ok) throw new Error('Failed to fetch feedback');
-      const data = await response.json();
-      setFeedback(data);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'An error occurred';
-      setError(message);
-    } finally {
-      setLoading(false);
-    }
+    // No feedback table — nothing to fetch
   }, []);
 
-  // Submit new feedback
   const submitFeedback = useCallback(
-    async (data: {
-      account_name: string;
-      arr: number;
-      raw_text: string;
-    }): Promise<FeedbackWithAccount> => {
-      try {
-        setError(null);
-        const response = await fetch('/api/feedback', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to submit feedback');
-        }
-
-        const newFeedback = await response.json();
-        setFeedback((prev) => [newFeedback, ...prev]);
-        return newFeedback;
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'An error occurred';
-        setError(message);
-        throw err;
-      }
+    async (_data: { account_name: string; arr: number; raw_text: string }) => {
+      throw new Error('Feedback table is not available. Use feature_requests instead.');
     },
     []
   );
 
-  // Fetch on mount
-  useEffect(() => {
-    refetch();
-  }, [refetch]);
-
   return {
-    feedback,
-    loading,
-    error,
+    feedback: [],
+    loading: false,
+    error: null,
     refetch,
     submitFeedback,
   };

@@ -1,6 +1,6 @@
 /**
  * Features API endpoint
- * GET: fetch all consolidated feature requests for the org
+ * GET: fetch all feature requests for the org (actual schema)
  */
 
 import { createClient } from '@/lib/supabase/server';
@@ -24,7 +24,7 @@ export async function GET() {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('org_id')
+      .select('organization_id')
       .eq('id', user.id)
       .single();
 
@@ -35,12 +35,12 @@ export async function GET() {
       );
     }
 
-    // Fetch feature requests
+    // Fetch feature requests with account data
     const { data: features, error } = await supabase
       .from('feature_requests')
-      .select('*')
-      .eq('org_id', profile.org_id)
-      .order('total_revenue_weight', { ascending: false });
+      .select('*, accounts:account_id (id, name, arr)')
+      .eq('organization_id', profile.organization_id)
+      .order('blocker_score', { ascending: false });
 
     if (error) throw error;
 

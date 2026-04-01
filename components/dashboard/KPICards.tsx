@@ -1,6 +1,7 @@
 /**
  * Key Performance Indicator cards
- * Displays 4 main metrics: Total ARR, Feedback Count, Features, Avg Urgency
+ * Displays 4 main metrics: Total ARR, Feature Count, Account Count, Avg Blocker
+ * Uses actual DB schema fields.
  */
 
 import { formatARR } from '@/lib/utils';
@@ -8,9 +9,9 @@ import { KPICardsProps } from '@/types';
 
 export default function KPICards({
   totalARR,
-  feedbackCount,
   featureCount,
-  avgUrgency,
+  accountCount,
+  avgBlocker,
 }: KPICardsProps) {
   const cards = [
     {
@@ -19,19 +20,19 @@ export default function KPICards({
       accent: 'var(--green)',
     },
     {
-      label: 'Total Feedback',
-      value: feedbackCount.toLocaleString(),
+      label: 'Feature Requests',
+      value: featureCount.toLocaleString(),
       accent: 'var(--gold)',
     },
     {
-      label: 'Features Found',
-      value: featureCount.toLocaleString(),
+      label: 'Accounts',
+      value: accountCount.toLocaleString(),
       accent: 'var(--gold-dim)',
     },
     {
-      label: 'Avg Urgency',
-      value: `${avgUrgency}/10`,
-      accent: avgUrgency >= 7 ? 'var(--red)' : avgUrgency >= 5 ? 'var(--orange)' : 'var(--border-bright)',
+      label: 'Avg Blocker',
+      value: `${avgBlocker}/5`,
+      accent: avgBlocker >= 4 ? 'var(--red)' : avgBlocker >= 3 ? 'var(--orange)' : 'var(--border-bright)',
     },
   ];
 

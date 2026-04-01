@@ -44,7 +44,7 @@ export default function SettingsPage() {
           const { data: orgData } = await supabase
             .from('organizations')
             .select('*')
-            .eq('id', profileData.org_id)
+            .eq('id', profileData.organization_id)
             .single();
 
           if (orgData) setOrg(orgData);

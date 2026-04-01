@@ -1,69 +1,81 @@
 /**
  * Roadmap page
- * Kanban-style view of features by status
+ * Kanban-style view of feature requests by deal stage
+ *
+ * ACTUAL feature_requests columns:
+ *   id, organization_id, account_id, feature_name, category, deal_stage,
+ *   notes, submitted_by, source, confidence, confidence_note, created_at, blocker_score
  */
 
 export const dynamic = 'force-dynamic';
 
 import { getAuthProfile } from '@/lib/supabase/server';
-import { RoadmapStatus } from '@/types';
 import { formatARR } from '@/lib/utils';
 
-async function getFeatures(): Promise<Partial<Record<RoadmapStatus, any[]>>> {
+type DealStage = 'New Business' | 'Active' | 'Expansion' | 'Renewal' | 'At Risk';
+
+const STAGES: DealStage[] = ['New Business', 'Active', 'Expansion', 'Renewal', 'At Risk'];
+
+const STAGE_META: Record<DealStage, { label: string; color: string }> = {
+  'New Business': { label: 'New Business',  color: '#3a7bd5' },
+  'Active':       { label: 'Active',        color: 'var(--green)' },
+  'Expansion':    { label: 'Expansion',     color: 'var(--gold-dim)' },
+  'Renewal':      { label: 'Renewal',       color: 'var(--orange-dim)' },
+  'At Risk':      { label: 'At Risk',       color: 'var(--red)' },
+};
+
+async function getFeatures() {
   const auth = await getAuthProfile();
   if (!auth) return {};
 
   const { data: features } = await auth.admin
     .from('feature_requests')
-    .select('*')
-    .eq('org_id', auth.orgId)
-    .order('total_revenue_weight', { ascending: false });
+    .select(`
+      id, feature_name, category, deal_stage, notes,
+      confidence, blocker_score, created_at,
+      accounts:account_id (name, arr)
+    `)
+    .eq('organization_id', auth.orgId)
+    .order('blocker_score', { ascending: false });
 
-  const grouped: Record<RoadmapStatus, any[]> = {
-    backlog: [],
-    planned: [],
-    in_progress: [],
-    shipped: [],
-  };
+  const grouped: Record<string, any[]> = {};
+  for (const stage of STAGES) {
+    grouped[stage] = [];
+  }
+  // Catch-all for unrecognized stages
+  grouped['Other'] = [];
 
   features?.forEach((feature) => {
-    const status = feature.roadmap_status as RoadmapStatus;
-    grouped[status].push(feature);
+    const stage = feature.deal_stage || 'Other';
+    if (grouped[stage]) {
+      grouped[stage].push(feature);
+    } else {
+      grouped['Other'].push(feature);
+    }
   });
 
   return grouped;
 }
 
-const STATUS_META: Record<RoadmapStatus, { label: string; color: string }> = {
-  backlog:     { label: 'Backlog',      color: 'var(--border-bright)' },
-  planned:     { label: 'Planned',      color: '#3a7bd5' },
-  in_progress: { label: 'In Progress',  color: 'var(--gold-dim)' },
-  shipped:     { label: 'Shipped',      color: 'var(--green)' },
-};
-
 export default async function RoadmapPage() {
   const grouped = await getFeatures();
 
-  const columns: RoadmapStatus[] = ['backlog', 'planned', 'in_progress', 'shipped'];
+  const columns = [...STAGES, ...(grouped['Other']?.length ? ['Other' as const] : [])];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-      {/* Header */}
       <div>
         <h1 className="page-title">Product Roadmap</h1>
-        <p className="page-subtitle">Features by status · revenue-ranked within each column</p>
+        <p className="page-subtitle">Feature requests by deal stage · ranked by blocker score</p>
       </div>
 
-      {/* Kanban board */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.2rem' }}>
-        {columns.map((status) => {
-          const meta = STATUS_META[status];
-          const items = grouped[status] || [];
-          const colARR = items.reduce((s: number, f: any) => s + f.total_revenue_weight, 0);
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${columns.length}, 1fr)`, gap: '1.2rem', overflowX: 'auto' }}>
+        {columns.map((stage) => {
+          const meta = STAGE_META[stage as DealStage] || { label: stage, color: 'var(--border-bright)' };
+          const items = grouped[stage] || [];
 
           return (
-            <div key={status}>
-              {/* Column header */}
+            <div key={stage}>
               <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
@@ -85,13 +97,6 @@ export default async function RoadmapPage() {
                 </span>
               </div>
 
-              {colARR > 0 && (
-                <div style={{ fontSize: '9px', color: 'var(--green)', letterSpacing: '0.1em', marginBottom: '0.75rem', paddingLeft: '0.8rem' }}>
-                  {formatARR(colARR)} ARR
-                </div>
-              )}
-
-              {/* Cards */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {items.length > 0 ? (
                   items.map((feature: any) => (
@@ -103,15 +108,22 @@ export default async function RoadmapPage() {
                         padding: '0.85rem 0.9rem',
                       }}
                     >
-                      <p style={{ fontSize: '12px', color: 'var(--ink-dim)', lineHeight: 1.4, marginBottom: '0.5rem' }}>
-                        {feature.title}
+                      <p style={{ fontSize: '12px', color: 'var(--ink-dim)', lineHeight: 1.4, marginBottom: '0.4rem' }}>
+                        {feature.feature_name}
                       </p>
+                      <div style={{ fontSize: '9px', color: 'var(--ink-muted)', marginBottom: '0.4rem', letterSpacing: '0.04em' }}>
+                        {(feature.accounts as any)?.name || 'Unknown'}
+                      </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: '10px', color: 'var(--green)', fontFamily: '"DM Mono", monospace' }}>
-                          {formatARR(feature.total_revenue_weight)}
+                          {(feature.accounts as any)?.arr ? formatARR((feature.accounts as any).arr) : '—'}
                         </span>
-                        <span style={{ fontSize: '9px', color: 'var(--ink-muted)', letterSpacing: '0.06em' }}>
-                          {feature.account_count} acct{feature.account_count !== 1 ? 's' : ''}
+                        <span style={{
+                          fontSize: '9px',
+                          color: feature.blocker_score >= 4 ? 'var(--orange)' : 'var(--ink-muted)',
+                          letterSpacing: '0.06em',
+                        }}>
+                          B{feature.blocker_score}/5
                         </span>
                       </div>
                     </div>
@@ -119,7 +131,7 @@ export default async function RoadmapPage() {
                 ) : (
                   <div style={{ padding: '1.5rem 0', textAlign: 'center' }}>
                     <span style={{ fontSize: '9px', color: 'var(--border-bright)', letterSpacing: '0.12em' }}>
-                      {status === 'backlog' ? '—' : 'empty'}
+                      —
                     </span>
                   </div>
                 )}

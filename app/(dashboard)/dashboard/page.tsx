@@ -1,6 +1,12 @@
 /**
  * Dashboard overview page
  * Shows key metrics and recent activity
+ *
+ * ACTUAL DB SCHEMA:
+ *   accounts:         id, organization_id, name, arr, crm_source, crm_id, created_at
+ *   feature_requests: id, organization_id, account_id, feature_name, category,
+ *                     deal_stage, notes, submitted_by, source, confidence,
+ *                     confidence_note, created_at, blocker_score
  */
 
 export const dynamic = 'force-dynamic';
@@ -8,7 +14,6 @@ export const dynamic = 'force-dynamic';
 import { redirect } from 'next/navigation';
 import { getAuthProfile } from '@/lib/supabase/server';
 import KPICards from '@/components/dashboard/KPICards';
-import FeatureRankingChart from '@/components/dashboard/FeatureRankingChart';
 import { formatARR, timeAgo } from '@/lib/utils';
 import Link from 'next/link';
 
@@ -18,58 +23,76 @@ async function getStats() {
 
   const { admin, orgId } = auth;
 
-  const { count: feedbackCount } = await admin
-    .from('feedback')
-    .select('id', { count: 'exact' })
-    .eq('org_id', orgId);
+  // Accounts + total ARR
+  const { data: accounts } = await admin
+    .from('accounts')
+    .select('id, name, arr')
+    .eq('organization_id', orgId);
 
-  const { data: feedbackData } = await admin
-    .from('feedback')
-    .select('revenue_weight')
-    .eq('org_id', orgId);
-  const totalARR = feedbackData?.reduce((sum, f) => sum + (f.revenue_weight || 0), 0) || 0;
+  const totalARR = accounts?.reduce((sum, a) => sum + (a.arr || 0), 0) || 0;
+  const accountCount = accounts?.length || 0;
 
+  // Feature requests count
   const { count: featureCount } = await admin
     .from('feature_requests')
     .select('id', { count: 'exact' })
-    .eq('org_id', orgId);
+    .eq('organization_id', orgId);
 
-  const { data: urgencyData } = await admin
-    .from('feedback')
-    .select('urgency_score')
-    .eq('org_id', orgId);
-  const avgUrgency =
-    urgencyData && urgencyData.length > 0
-      ? Math.round(urgencyData.reduce((sum, f) => sum + f.urgency_score, 0) / urgencyData.length)
+  // Average blocker score
+  const { data: blockerData } = await admin
+    .from('feature_requests')
+    .select('blocker_score')
+    .eq('organization_id', orgId);
+  const avgBlocker =
+    blockerData && blockerData.length > 0
+      ? Math.round(
+          (blockerData.reduce((sum, f) => sum + (f.blocker_score || 0), 0) /
+            blockerData.length) *
+            10
+        ) / 10
       : 0;
 
-  const { data: recentFeedback } = await admin
-    .from('feedback')
+  // Recent feature requests (with account name via join)
+  const { data: recentFeatures } = await admin
+    .from('feature_requests')
     .select(`
       id,
-      raw_text,
-      revenue_weight,
+      feature_name,
       category,
+      deal_stage,
+      confidence,
+      blocker_score,
+      notes,
       created_at,
-      accounts:account_id (name)
+      accounts:account_id (name, arr)
     `)
-    .eq('org_id', orgId)
+    .eq('organization_id', orgId)
     .order('created_at', { ascending: false })
     .limit(5);
 
+  // Top features by blocker score
   const { data: topFeatures } = await admin
     .from('feature_requests')
-    .select('id, org_id, title, description, total_revenue_weight, account_count, feedback_ids, roadmap_status, category, blocker_score, created_at, updated_at')
-    .eq('org_id', orgId)
-    .order('total_revenue_weight', { ascending: false })
+    .select(`
+      id,
+      feature_name,
+      category,
+      blocker_score,
+      deal_stage,
+      confidence,
+      created_at,
+      accounts:account_id (name, arr)
+    `)
+    .eq('organization_id', orgId)
+    .order('blocker_score', { ascending: false })
     .limit(3);
 
   return {
     totalARR,
-    feedbackCount: feedbackCount || 0,
+    accountCount,
     featureCount: featureCount || 0,
-    avgUrgency,
-    recentFeedback,
+    avgBlocker,
+    recentFeatures,
     topFeatures,
   };
 }
@@ -92,14 +115,14 @@ export default async function DashboardPage() {
       {/* KPI Cards */}
       <KPICards
         totalARR={stats.totalARR}
-        feedbackCount={stats.feedbackCount}
         featureCount={stats.featureCount}
-        avgUrgency={stats.avgUrgency}
+        accountCount={stats.accountCount}
+        avgBlocker={stats.avgBlocker}
       />
 
       {/* Two-column layout */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-        {/* Recent feedback */}
+        {/* Recent feature requests */}
         <div className="card" style={{ padding: '1.4rem 1.6rem' }}>
           <div style={{
             fontFamily: '"Cormorant Garamond", serif',
@@ -111,13 +134,13 @@ export default async function DashboardPage() {
             paddingBottom: '0.75rem',
             borderBottom: '1px solid var(--border)',
           }}>
-            Recent Feedback
+            Recent Requests
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            {stats.recentFeedback && stats.recentFeedback.length > 0 ? (
-              stats.recentFeedback.map((feedback: any) => (
+            {stats.recentFeatures && stats.recentFeatures.length > 0 ? (
+              stats.recentFeatures.map((feature: any) => (
                 <div
-                  key={feedback.id}
+                  key={feature.id}
                   style={{
                     padding: '0.75rem 0',
                     borderBottom: '1px solid var(--border)',
@@ -125,37 +148,39 @@ export default async function DashboardPage() {
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
                     <span style={{ fontSize: '11px', color: 'var(--ink-dim)', letterSpacing: '0.04em' }}>
-                      {(feedback.accounts as any)?.name || 'Unknown Account'}
+                      {(feature.accounts as any)?.name || 'Unknown Account'}
                     </span>
                     <span style={{ fontSize: '9px', color: 'var(--ink-muted)', letterSpacing: '0.08em' }}>
-                      {timeAgo(feedback.created_at)}
+                      {timeAgo(feature.created_at)}
                     </span>
                   </div>
                   <p style={{ fontSize: '12px', color: 'var(--ink-muted)', lineHeight: 1.5, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-                    {feedback.raw_text}
+                    {feature.feature_name}{feature.notes ? ` — ${feature.notes}` : ''}
                   </p>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.4rem' }}>
                     <span className="chip" style={{ color: 'var(--gold-dim)', borderColor: 'var(--gold-dim)' }}>
-                      {feedback.category}
+                      {feature.category}
                     </span>
-                    <span style={{ fontSize: '10px', color: 'var(--green)', fontFamily: '"DM Mono", monospace' }}>
-                      {formatARR(feedback.revenue_weight)}
-                    </span>
+                    {(feature.accounts as any)?.arr && (
+                      <span style={{ fontSize: '10px', color: 'var(--green)', fontFamily: '"DM Mono", monospace' }}>
+                        {formatARR((feature.accounts as any).arr)}
+                      </span>
+                    )}
                   </div>
                 </div>
               ))
             ) : (
               <div style={{ textAlign: 'center', padding: '2rem 0' }}>
-                <div style={{ fontSize: '11px', color: 'var(--ink-muted)', letterSpacing: '0.12em', marginBottom: '1rem' }}>No feedback yet</div>
+                <div style={{ fontSize: '11px', color: 'var(--ink-muted)', letterSpacing: '0.12em', marginBottom: '1rem' }}>No feature requests yet</div>
                 <Link href="/dashboard/feedback" className="btn btn-primary" style={{ fontSize: '9px' }}>
-                  Add Feedback
+                  Add Request
                 </Link>
               </div>
             )}
           </div>
         </div>
 
-        {/* Top features */}
+        {/* Top features by blocker score */}
         <div className="card" style={{ padding: '1.4rem 1.6rem' }}>
           <div style={{
             fontFamily: '"Cormorant Garamond", serif',
@@ -167,7 +192,7 @@ export default async function DashboardPage() {
             paddingBottom: '0.75rem',
             borderBottom: '1px solid var(--border)',
           }}>
-            Top Features
+            Top Blockers
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             {stats.topFeatures && stats.topFeatures.length > 0 ? (
@@ -195,45 +220,33 @@ export default async function DashboardPage() {
                       {i + 1}
                     </span>
                     <div>
-                      <div style={{ fontSize: '12px', color: 'var(--ink-dim)', lineHeight: 1.4 }}>{feature.title}</div>
+                      <div style={{ fontSize: '12px', color: 'var(--ink-dim)', lineHeight: 1.4 }}>{feature.feature_name}</div>
                       <div style={{ fontSize: '9px', color: 'var(--ink-muted)', marginTop: '0.2rem', letterSpacing: '0.08em' }}>
-                        {feature.account_count} account{feature.account_count !== 1 ? 's' : ''}
+                        {(feature.accounts as any)?.name || 'Unknown'} · {feature.deal_stage || 'Active'}
                       </div>
                     </div>
                   </div>
-                  <span style={{ fontSize: '12px', color: 'var(--green)', fontFamily: '"DM Mono", monospace', whiteSpace: 'nowrap' }}>
-                    {formatARR(feature.total_revenue_weight)}
-                  </span>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem' }}>
+                    <span style={{ fontSize: '12px', color: 'var(--green)', fontFamily: '"DM Mono", monospace', whiteSpace: 'nowrap' }}>
+                      {(feature.accounts as any)?.arr ? formatARR((feature.accounts as any).arr) : '—'}
+                    </span>
+                    <span style={{ fontSize: '9px', color: feature.blocker_score >= 4 ? 'var(--orange)' : 'var(--ink-muted)', letterSpacing: '0.08em' }}>
+                      BLOCKER {feature.blocker_score}/5
+                    </span>
+                  </div>
                 </div>
               ))
             ) : (
               <div style={{ textAlign: 'center', padding: '2rem 0' }}>
                 <div style={{ fontSize: '11px', color: 'var(--ink-muted)', letterSpacing: '0.12em', marginBottom: '1rem' }}>No features yet</div>
                 <Link href="/dashboard/feedback" className="btn btn-primary" style={{ fontSize: '9px' }}>
-                  Add Feedback
+                  Add Request
                 </Link>
               </div>
             )}
           </div>
         </div>
       </div>
-
-      {/* Feature ranking chart */}
-      {stats.topFeatures && stats.topFeatures.length > 0 && (
-        <div className="card" style={{ padding: '1.4rem 1.6rem' }}>
-          <div style={{
-            fontFamily: '"Cormorant Garamond", serif',
-            fontSize: '1rem',
-            fontWeight: 300,
-            color: 'var(--ink)',
-            letterSpacing: '0.06em',
-            marginBottom: '1.2rem',
-          }}>
-            Feature Revenue Impact
-          </div>
-          <FeatureRankingChart features={stats.topFeatures} />
-        </div>
-      )}
     </div>
   );
 }

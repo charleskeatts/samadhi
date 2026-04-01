@@ -1,6 +1,7 @@
 /**
  * Roadmap brief generation API endpoint
  * Generates a product brief for a feature request
+ * Uses actual DB schema columns.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -21,10 +22,10 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient();
 
-    // Fetch the feature request
+    // Fetch the feature request with account data
     const { data: feature, error } = await supabase
       .from('feature_requests')
-      .select('*')
+      .select('*, accounts:account_id (id, name, arr)')
       .eq('id', feature_request_id)
       .single();
 
@@ -35,13 +36,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate the roadmap brief
+    // Generate the roadmap brief using actual column names
     const brief = await generateRoadmapBrief(
       feature.id,
-      feature.title,
-      feature.description || '',
-      feature.total_revenue_weight,
-      feature.account_count
+      feature.feature_name,
+      feature.notes || '',
+      feature.accounts?.arr ?? 0,
+      feature.accounts?.name ?? 'Unknown'
     );
 
     return NextResponse.json(brief);

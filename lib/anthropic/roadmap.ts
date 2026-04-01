@@ -1,31 +1,38 @@
 /**
  * Claude-powered roadmap brief generation
- * Creates a product brief from a consolidated feature request
+ * Creates a product brief from a feature request.
+ * Uses actual DB schema columns (feature_name, notes, etc.)
  */
 
 import Anthropic from '@anthropic-ai/sdk';
-import { RoadmapBriefResult } from '@/types';
 
 const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
+
+export interface RoadmapBriefResult {
+  feature_request_id: string;
+  one_pager_md: string;
+  acceptance_criteria: string[];
+  priority_rationale: string;
+}
 
 /**
  * Generate a product brief/one-pager for a feature request
  */
 export async function generateRoadmapBrief(
   featureRequestId: string,
-  title: string,
-  description: string,
-  totalRevenueWeight: number,
-  accountCount: number
+  featureName: string,
+  notes: string,
+  accountARR: number,
+  accountName: string
 ): Promise<RoadmapBriefResult> {
   const context = `You are a senior product manager writing a product brief.
 
-Feature: ${title}
-Description: ${description}
-Total ARR at Stake: $${totalRevenueWeight.toLocaleString()}
-Number of Accounts Requesting: ${accountCount}
+Feature: ${featureName}
+Notes: ${notes}
+Account: ${accountName}
+Account ARR: $${accountARR.toLocaleString()}
 
 Write a product brief that includes:
 1. A clear problem statement (2-3 sentences)
@@ -34,7 +41,7 @@ Write a product brief that includes:
 
 Respond with ONLY valid JSON (no markdown) in this format:
 {
-  "one_pager_md": "# ${title}\n\n## Problem\n[problem statement]\n\n## Solution\n[proposed solution]",
+  "one_pager_md": "# ${featureName}\\n\\n## Problem\\n[problem statement]\\n\\n## Solution\\n[proposed solution]",
   "acceptance_criteria": ["Criterion 1", "Criterion 2"],
   "priority_rationale": "2-sentence explanation of priority based on revenue impact"
 }`;
@@ -67,13 +74,13 @@ Respond with ONLY valid JSON (no markdown) in this format:
     // Return a fallback brief
     return {
       feature_request_id: featureRequestId,
-      one_pager_md: `# ${title}\n\n${description}`,
+      one_pager_md: `# ${featureName}\n\n${notes}`,
       acceptance_criteria: [
         'Feature is implemented',
         'Feature is tested',
         'Documentation is updated',
       ],
-      priority_rationale: `This feature impacts $${totalRevenueWeight.toLocaleString()} in ARR across ${accountCount} accounts.`,
+      priority_rationale: `This feature impacts $${accountARR.toLocaleString()} in ARR for ${accountName}.`,
     };
   }
 }

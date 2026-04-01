@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
       .from('profiles')
       .insert({
         id: user.id,
-        org_id: org.id,
+        organization_id: org.id,
         full_name: full_name || user.email?.split('@')[0] || 'Admin',
         role: role || 'admin',
       });
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
       console.error('[onboarding] seedDemoData failed (non-fatal):', err);
     }
 
-    return NextResponse.json({ success: true, org_id: org.id });
+    return NextResponse.json({ success: true, organization_id: org.id });
   } catch (error) {
     console.error('Onboarding error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

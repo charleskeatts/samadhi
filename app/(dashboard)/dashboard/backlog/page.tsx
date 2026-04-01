@@ -1,16 +1,17 @@
 /**
  * Revenue Priority Backlog
- * ARR-ranked feature backlog with table and kanban views.
+ * Feature requests with table and kanban views.
+ * Uses actual DB schema: feature_requests joined with accounts for ARR data.
  */
 
 'use client';
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { FeatureRequest } from '@/types';
+import { FeatureRequestWithAccount } from '@/types';
 
 type View = 'table' | 'kanban';
-type SortKey = 'arr' | 'deals' | 'blocker';
+type SortKey = 'arr' | 'blocker' | 'recent';
 
 const BLOCKER_LABEL: Record<number, string> = { 5: 'Critical', 4: 'High', 3: 'Medium', 2: 'Low', 1: 'Minimal' };
 const BLOCKER_COLOR: Record<number, string> = {
@@ -21,32 +22,25 @@ const BLOCKER_COLOR: Record<number, string> = {
   1: 'var(--border-bright)',
 };
 
-const STATUS_DISPLAY: Record<string, string> = {
-  backlog:     'Not Started',
-  planned:     'Planned',
-  in_progress: 'In Progress',
-  shipped:     'Shipped',
+const STAGE_DISPLAY: Record<string, string> = {
+  discovery:    'Discovery',
+  evaluation:   'Evaluation',
+  negotiation:  'Negotiation',
+  closed_won:   'Closed Won',
+  closed_lost:  'Closed Lost',
 };
-const STATUS_COLOR: Record<string, string> = {
-  backlog:     'var(--border-bright)',
-  planned:     '#3a7bd5',
-  in_progress: 'var(--gold-dim)',
-  shipped:     'var(--green)',
+const STAGE_COLOR: Record<string, string> = {
+  discovery:    'var(--border-bright)',
+  evaluation:   '#3a7bd5',
+  negotiation:  'var(--gold-dim)',
+  closed_won:   'var(--green)',
+  closed_lost:  'var(--red)',
 };
 
 function fmt(n: number): string {
   if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `$${(n / 1_000).toFixed(0)}K`;
   return `$${n}`;
-}
-
-function deriveSource(crm_note_id: string | null): string {
-  if (!crm_note_id) return 'Manual';
-  if (crm_note_id.includes('salesforce')) return 'Salesforce Notes';
-  if (crm_note_id.includes('slack')) return 'Slack';
-  if (crm_note_id.includes('export')) return 'Support Tickets';
-  if (crm_note_id.includes('reporting')) return 'Gong Calls';
-  return crm_note_id.replace(/^demo:/, '');
 }
 
 function recommendedAction(score: number): string {
@@ -56,8 +50,7 @@ function recommendedAction(score: number): string {
 }
 
 export default function BacklogPage() {
-  const [features, setFeatures] = useState<FeatureRequest[]>([]);
-  const [sourceMap, setSourceMap] = useState<Record<string, string[]>>({});
+  const [features, setFeatures] = useState<FeatureRequestWithAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<View>('table');
   const [sortBy, setSortBy] = useState<SortKey>('arr');
@@ -69,33 +62,11 @@ export default function BacklogPage() {
     const load = async () => {
       const { data: feats } = await supabase
         .from('feature_requests')
-        .select('*')
-        .order('total_revenue_weight', { ascending: false });
+        .select('*, accounts:account_id (id, name, arr)')
+        .order('blocker_score', { ascending: false });
 
       if (!feats?.length) { setLoading(false); return; }
-      setFeatures(feats);
-
-      const allIds = feats.flatMap((f) => f.feedback_ids);
-      if (allIds.length > 0) {
-        const { data: fbRows } = await supabase
-          .from('feedback')
-          .select('id, crm_note_id')
-          .in('id', allIds);
-
-        if (fbRows) {
-          const fbMap: Record<string, string | null> = {};
-          for (const fb of fbRows) fbMap[fb.id] = fb.crm_note_id;
-
-          const sm: Record<string, string[]> = {};
-          for (const feat of feats) {
-            const sources: string[] = [
-              ...new Set<string>(feat.feedback_ids.map((id: string) => deriveSource(fbMap[id] ?? null))),
-            ];
-            sm[feat.id] = sources;
-          }
-          setSourceMap(sm);
-        }
-      }
+      setFeatures(feats as FeatureRequestWithAccount[]);
       setLoading(false);
     };
     load();
@@ -103,18 +74,20 @@ export default function BacklogPage() {
 
   const categories = ['All', ...Array.from(new Set(features.map((f) => f.category ?? 'General')))];
 
+  const getARR = (f: FeatureRequestWithAccount) => f.accounts?.arr ?? 0;
+
   const filtered = [...features]
     .filter((f) => filterCategory === 'All' || (f.category ?? 'General') === filterCategory)
     .sort((a, b) => {
-      if (sortBy === 'arr') return b.total_revenue_weight - a.total_revenue_weight;
-      if (sortBy === 'deals') return b.account_count - a.account_count;
-      return (b.blocker_score ?? 3) - (a.blocker_score ?? 3);
+      if (sortBy === 'arr') return getARR(b) - getARR(a);
+      if (sortBy === 'blocker') return (b.blocker_score ?? 3) - (a.blocker_score ?? 3);
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
 
-  const totalARR = features.reduce((s, f) => s + f.total_revenue_weight, 0);
-  const filteredARR = filtered.reduce((s, f) => s + f.total_revenue_weight, 0);
+  const totalARR = features.reduce((s, f) => s + getARR(f), 0);
+  const filteredARR = filtered.reduce((s, f) => s + getARR(f), 0);
   const criticalCount = features.filter((f) => (f.blocker_score ?? 0) === 5).length;
-  const totalDeals = features.reduce((s, f) => s + f.account_count, 0);
+  const uniqueAccounts = new Set(features.map((f) => f.account_id)).size;
 
   if (loading) {
     return (
@@ -136,15 +109,15 @@ export default function BacklogPage() {
             No features yet
           </div>
           <p style={{ fontSize: '10px', color: 'var(--border-bright)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
-            Add feedback and run the AI consolidation to populate the backlog.
+            Feature requests will appear here once data is submitted.
           </p>
-          <a href="/dashboard/feedback" className="btn btn-primary" style={{ fontSize: '9px' }}>
-            Add Feedback
-          </a>
         </div>
       </div>
     );
   }
+
+  // Kanban stages come from deal_stage
+  const kanbanStages = ['discovery', 'evaluation', 'negotiation', 'closed_won'];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -152,7 +125,7 @@ export default function BacklogPage() {
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <div>
           <h1 className="page-title">Revenue Priority</h1>
-          <p className="page-subtitle">Features ranked by ARR at risk · updated after AI consolidation</p>
+          <p className="page-subtitle">Features ranked by account ARR</p>
         </div>
         {/* View toggle */}
         <div style={{ display: 'flex', gap: '4px' }}>
@@ -174,7 +147,7 @@ export default function BacklogPage() {
         {[
           { label: 'Total ARR at Risk', value: fmt(totalARR), accent: 'var(--gold)' },
           { label: 'Critical Blockers', value: String(criticalCount), accent: 'var(--red)' },
-          { label: 'Deals Affected', value: String(totalDeals), accent: 'var(--orange)' },
+          { label: 'Accounts Affected', value: String(uniqueAccounts), accent: 'var(--orange)' },
           { label: 'Filtered ARR', value: fmt(filteredARR), accent: 'var(--green)' },
         ].map((kpi) => (
           <div
@@ -224,7 +197,7 @@ export default function BacklogPage() {
         </div>
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <span style={{ fontSize: '9px', color: 'var(--ink-muted)', letterSpacing: '0.12em' }}>Sort:</span>
-          {([['arr', 'ARR'], ['deals', 'Deals'], ['blocker', 'Blocker']] as [SortKey, string][]).map(([key, label]) => (
+          {([['arr', 'ARR'], ['blocker', 'Blocker'], ['recent', 'Recent']] as [SortKey, string][]).map(([key, label]) => (
             <button
               key={key}
               onClick={() => setSortBy(key)}
@@ -252,7 +225,7 @@ export default function BacklogPage() {
           {/* Header */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: '40px 1fr 120px 70px 110px 120px',
+            gridTemplateColumns: '40px 1fr 120px 110px 120px 110px',
             padding: '0.65rem 1.1rem',
             borderBottom: '1px solid var(--border)',
             background: 'var(--bg)',
@@ -265,16 +238,18 @@ export default function BacklogPage() {
           }}>
             <div>#</div>
             <div>Feature</div>
-            <div style={{ textAlign: 'right' }}>ARR at Risk</div>
-            <div style={{ textAlign: 'center' }}>Deals</div>
+            <div style={{ textAlign: 'right' }}>Account ARR</div>
             <div style={{ textAlign: 'center' }}>Blocker</div>
-            <div style={{ textAlign: 'center' }}>Status</div>
+            <div style={{ textAlign: 'center' }}>Deal Stage</div>
+            <div style={{ textAlign: 'center' }}>Source</div>
           </div>
 
           {filtered.map((f, i) => {
             const score = f.blocker_score ?? 3;
             const isSelected = selectedId === f.id;
             const blockerColor = BLOCKER_COLOR[score] || 'var(--border-bright)';
+            const accountARR = getARR(f);
+            const stage = f.deal_stage || 'discovery';
 
             return (
               <div key={f.id}>
@@ -282,7 +257,7 @@ export default function BacklogPage() {
                   onClick={() => setSelectedId(isSelected ? null : f.id)}
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: '40px 1fr 120px 70px 110px 120px',
+                    gridTemplateColumns: '40px 1fr 120px 110px 120px 110px',
                     padding: '0 1.1rem',
                     borderBottom: `1px solid var(--border)`,
                     cursor: 'pointer',
@@ -293,7 +268,7 @@ export default function BacklogPage() {
                     transition: 'background 0.15s',
                   }}
                   onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = 'rgba(255,255,255,0.015)'; }}
-                  onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}
+                  onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = isSelected ? 'rgba(232,184,75,0.04)' : 'transparent'; }}
                 >
                   {/* Rank */}
                   <div style={{
@@ -305,36 +280,41 @@ export default function BacklogPage() {
                     {i + 1}
                   </div>
 
-                  {/* Feature name + tags */}
+                  {/* Feature name + category + account */}
                   <div>
-                    <div style={{ fontSize: '12.5px', color: 'var(--ink-dim)', lineHeight: 1.3 }}>{f.title}</div>
-                    {f.category && (
-                      <span className="chip" style={{ marginTop: '0.25rem', fontSize: '8px' }}>{f.category}</span>
-                    )}
+                    <div style={{ fontSize: '12.5px', color: 'var(--ink-dim)', lineHeight: 1.3 }}>{f.feature_name}</div>
+                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem', alignItems: 'center' }}>
+                      {f.category && (
+                        <span className="chip" style={{ fontSize: '8px' }}>{f.category}</span>
+                      )}
+                      {f.accounts?.name && (
+                        <span style={{ fontSize: '9px', color: 'var(--ink-muted)' }}>{f.accounts.name}</span>
+                      )}
+                    </div>
                   </div>
 
                   {/* ARR */}
                   <div style={{ textAlign: 'right', fontSize: '13px', color: 'var(--green)', fontFamily: '"DM Mono", monospace' }}>
-                    {fmt(f.total_revenue_weight)}
-                  </div>
-
-                  {/* Deals */}
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '13px', color: 'var(--ink-dim)' }}>{f.account_count}</div>
+                    {fmt(accountARR)}
                   </div>
 
                   {/* Blocker badge */}
                   <div style={{ textAlign: 'center' }}>
                     <span className="chip" style={{ color: blockerColor, borderColor: blockerColor, fontSize: '8px' }}>
-                      {BLOCKER_LABEL[score]}
+                      {BLOCKER_LABEL[score] ?? `${score}`}
                     </span>
                   </div>
 
-                  {/* Status */}
+                  {/* Deal Stage */}
                   <div style={{ textAlign: 'center' }}>
-                    <span className="chip" style={{ color: STATUS_COLOR[f.roadmap_status] || 'var(--border-bright)', borderColor: STATUS_COLOR[f.roadmap_status] || 'var(--border-bright)', fontSize: '8px' }}>
-                      {STATUS_DISPLAY[f.roadmap_status] ?? f.roadmap_status}
+                    <span className="chip" style={{ color: STAGE_COLOR[stage] || 'var(--border-bright)', borderColor: STAGE_COLOR[stage] || 'var(--border-bright)', fontSize: '8px' }}>
+                      {STAGE_DISPLAY[stage] ?? stage}
                     </span>
+                  </div>
+
+                  {/* Source */}
+                  <div style={{ textAlign: 'center', fontSize: '9px', color: 'var(--ink-muted)' }}>
+                    {f.source ?? 'Manual'}
                   </div>
                 </div>
 
@@ -354,22 +334,24 @@ export default function BacklogPage() {
                         Revenue Impact
                       </div>
                       <div style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: '1.6rem', color: 'var(--green)', fontWeight: 300 }}>
-                        {fmt(f.total_revenue_weight)}
+                        {fmt(accountARR)}
                       </div>
                       <div style={{ fontSize: '10px', color: 'var(--ink-muted)', marginTop: '0.3rem' }}>
-                        ARR at risk · {f.account_count} account{f.account_count !== 1 ? 's' : ''}
+                        {f.accounts?.name ?? 'Unknown account'}
                       </div>
                     </div>
                     <div>
                       <div style={{ fontSize: '8px', color: 'var(--ink-muted)', letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
-                        Signal Sources
+                        Notes
                       </div>
-                      {(sourceMap[f.id] ?? ['Loading...']).map((s) => (
-                        <div key={s} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.35rem' }}>
-                          <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--gold-dim)' }} />
-                          <span style={{ fontSize: '11px', color: 'var(--ink-muted)' }}>{s}</span>
+                      <div style={{ fontSize: '11px', color: 'var(--ink-muted)', lineHeight: 1.6 }}>
+                        {f.notes || 'No notes provided.'}
+                      </div>
+                      {f.confidence && (
+                        <div style={{ fontSize: '9px', color: 'var(--gold-dim)', marginTop: '0.5rem' }}>
+                          Confidence: {f.confidence} {f.confidence_note ? `— ${f.confidence_note}` : ''}
                         </div>
-                      ))}
+                      )}
                     </div>
                     <div>
                       <div style={{ fontSize: '8px', color: 'var(--ink-muted)', letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
@@ -386,18 +368,18 @@ export default function BacklogPage() {
           })}
         </div>
       ) : (
-        /* ── KANBAN VIEW ── */
+        /* ── KANBAN VIEW (by deal_stage) ── */
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
-          {(['backlog', 'planned', 'in_progress', 'shipped'] as const).map((status) => {
-            const cols = filtered.filter((f) => f.roadmap_status === status);
-            const colARR = cols.reduce((s, f) => s + f.total_revenue_weight, 0);
-            const statusColor = STATUS_COLOR[status];
+          {kanbanStages.map((stage) => {
+            const cols = filtered.filter((f) => (f.deal_stage || 'discovery') === stage);
+            const colARR = cols.reduce((s, f) => s + getARR(f), 0);
+            const stageColor = STAGE_COLOR[stage] || 'var(--border-bright)';
             return (
-              <div key={status}>
+              <div key={stage}>
                 <div style={{
                   background: 'var(--bg-card)',
                   border: '1px solid var(--border)',
-                  borderTop: `2px solid ${statusColor}`,
+                  borderTop: `2px solid ${stageColor}`,
                   padding: '0.75rem 0.9rem',
                   marginBottom: '0.5rem',
                   display: 'flex',
@@ -405,7 +387,7 @@ export default function BacklogPage() {
                   alignItems: 'center',
                 }}>
                   <span style={{ fontSize: '9px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-muted)' }}>
-                    {STATUS_DISPLAY[status]}
+                    {STAGE_DISPLAY[stage] ?? stage}
                   </span>
                   {colARR > 0 && (
                     <span style={{ fontSize: '9px', color: 'var(--green)', fontFamily: '"DM Mono", monospace' }}>
@@ -435,10 +417,10 @@ export default function BacklogPage() {
                       onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--border-bright)'}
                       onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border)'}
                     >
-                      <div style={{ fontSize: '12px', color: 'var(--ink-dim)', lineHeight: 1.4, marginBottom: '0.5rem' }}>{f.title}</div>
+                      <div style={{ fontSize: '12px', color: 'var(--ink-dim)', lineHeight: 1.4, marginBottom: '0.5rem' }}>{f.feature_name}</div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: '11px', color: 'var(--green)', fontFamily: '"DM Mono", monospace' }}>
-                          {fmt(f.total_revenue_weight)}
+                          {fmt(getARR(f))}
                         </span>
                         <div style={{
                           width: 6,
@@ -448,7 +430,7 @@ export default function BacklogPage() {
                         }} />
                       </div>
                       <div style={{ fontSize: '9px', color: 'var(--ink-muted)', marginTop: '0.3rem', letterSpacing: '0.06em' }}>
-                        {f.account_count} deal{f.account_count !== 1 ? 's' : ''} · {f.category}
+                        {f.accounts?.name ?? 'Unknown'} · {f.category}
                       </div>
                     </div>
                   );

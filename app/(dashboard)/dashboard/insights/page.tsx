@@ -1,21 +1,20 @@
 /**
  * AI Insights page
- * Shows consolidated feature requests ranked by revenue impact
+ * Shows feature requests ranked by blocker score and account ARR.
+ * Uses actual DB schema: feature_requests joined with accounts.
  */
 
 'use client';
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { FeatureRequest } from '@/types';
+import { FeatureRequestWithAccount } from '@/types';
 import { formatARR } from '@/lib/utils';
 
 export default function InsightsPage() {
-  const [features, setFeatures] = useState<FeatureRequest[]>([]);
+  const [features, setFeatures] = useState<FeatureRequestWithAccount[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedFeature, setSelectedFeature] = useState<FeatureRequest | null>(null);
-  const [generatingBrief, setGeneratingBrief] = useState<string | null>(null);
-  const [briefError, setBriefError] = useState<string | null>(null);
+  const [selectedFeature, setSelectedFeature] = useState<FeatureRequestWithAccount | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -23,10 +22,10 @@ export default function InsightsPage() {
       try {
         const { data } = await supabase
           .from('feature_requests')
-          .select('*')
-          .order('total_revenue_weight', { ascending: false });
+          .select('*, accounts:account_id (id, name, arr)')
+          .order('blocker_score', { ascending: false });
 
-        setFeatures(data || []);
+        setFeatures((data as FeatureRequestWithAccount[]) || []);
       } catch (error) {
         console.error('Error fetching features:', error);
       } finally {
@@ -37,35 +36,7 @@ export default function InsightsPage() {
     fetchFeatures();
   }, []);
 
-  const handleGenerateBrief = async (featureId: string) => {
-    setGeneratingBrief(featureId);
-    setBriefError(null);
-    try {
-      const feature = features.find((f) => f.id === featureId);
-      if (!feature) return;
-
-      const response = await fetch('/api/ai/roadmap-brief', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ feature_request_id: featureId }),
-      });
-
-      if (!response.ok) {
-        const body = await response.json().catch(() => ({}));
-        throw new Error(body.error || `Request failed (${response.status})`);
-      }
-
-      const brief = await response.json();
-      setSelectedFeature({
-        ...feature,
-        description: `${feature.description}\n\n## Roadmap Brief\n\n${brief.one_pager_md}`,
-      });
-    } catch (error) {
-      setBriefError(error instanceof Error ? error.message : 'Failed to generate brief. Please try again.');
-    } finally {
-      setGeneratingBrief(null);
-    }
-  };
+  const getARR = (f: FeatureRequestWithAccount) => f.accounts?.arr ?? 0;
 
   if (loading) {
     return (
@@ -80,7 +51,7 @@ export default function InsightsPage() {
       {/* Header */}
       <div>
         <h1 className="page-title">AI Insights</h1>
-        <p className="page-subtitle">Feature requests consolidated and ranked by revenue impact</p>
+        <p className="page-subtitle">Feature requests ranked by blocker severity and account revenue</p>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1.5rem' }}>
@@ -128,14 +99,14 @@ export default function InsightsPage() {
                   }}
                 >
                   <p style={{ fontSize: '12px', color: 'var(--ink-dim)', lineHeight: 1.4, marginBottom: '0.35rem' }}>
-                    {feature.title}
+                    {feature.feature_name}
                   </p>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                     <span style={{ fontSize: '10px', color: 'var(--green)', fontFamily: '"DM Mono", monospace' }}>
-                      {formatARR(feature.total_revenue_weight)}
+                      {formatARR(getARR(feature))}
                     </span>
                     <span style={{ fontSize: '9px', color: 'var(--ink-muted)', letterSpacing: '0.06em' }}>
-                      {feature.account_count} account{feature.account_count !== 1 ? 's' : ''}
+                      {feature.accounts?.name ?? 'Unknown'}
                     </span>
                   </div>
                 </button>
@@ -146,11 +117,8 @@ export default function InsightsPage() {
                   No features yet
                 </p>
                 <p style={{ fontSize: '10px', color: 'var(--border-bright)', lineHeight: 1.6, marginBottom: '1rem' }}>
-                  AI consolidates feedback into features overnight. Add feedback first.
+                  Feature requests will appear here once data is submitted.
                 </p>
-                <a href="/dashboard/feedback" className="btn btn-primary" style={{ fontSize: '9px' }}>
-                  Add Feedback
-                </a>
               </div>
             )}
           </div>
@@ -169,44 +137,73 @@ export default function InsightsPage() {
                   letterSpacing: '0.04em',
                   marginBottom: '0.75rem',
                 }}>
-                  {selectedFeature.title}
+                  {selectedFeature.feature_name}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1.2rem', marginBottom: '1rem' }}>
                   <span style={{ fontSize: '11px', color: 'var(--green)', fontFamily: '"DM Mono", monospace' }}>
-                    {formatARR(selectedFeature.total_revenue_weight)} ARR
+                    {formatARR(getARR(selectedFeature))} ARR
                   </span>
                   <span style={{ fontSize: '9px', color: 'var(--ink-muted)', letterSpacing: '0.08em' }}>
-                    {selectedFeature.account_count} account{selectedFeature.account_count !== 1 ? 's' : ''}
+                    {selectedFeature.accounts?.name ?? 'Unknown'}
                   </span>
                   <span className="chip">
-                    {selectedFeature.roadmap_status}
+                    {selectedFeature.deal_stage ?? 'discovery'}
                   </span>
+                  {selectedFeature.category && (
+                    <span className="chip" style={{ color: 'var(--gold-dim)', borderColor: 'rgba(200,152,43,0.35)' }}>
+                      {selectedFeature.category}
+                    </span>
+                  )}
                 </div>
-                <p style={{ fontSize: '12px', color: 'var(--ink-muted)', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
-                  {selectedFeature.description}
-                </p>
+
+                {selectedFeature.notes && (
+                  <div style={{ marginBottom: '1rem' }}>
+                    <div style={{ fontSize: '8px', color: 'var(--ink-muted)', letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+                      Notes
+                    </div>
+                    <p style={{ fontSize: '12px', color: 'var(--ink-muted)', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+                      {selectedFeature.notes}
+                    </p>
+                  </div>
+                )}
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginTop: '0.5rem' }}>
+                  <div>
+                    <div style={{ fontSize: '8px', color: 'var(--ink-muted)', letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: '0.3rem' }}>
+                      Blocker Score
+                    </div>
+                    <div style={{ fontSize: '18px', color: selectedFeature.blocker_score >= 4 ? 'var(--red)' : 'var(--gold)', fontFamily: '"DM Mono", monospace' }}>
+                      {selectedFeature.blocker_score}/5
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '8px', color: 'var(--ink-muted)', letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: '0.3rem' }}>
+                      Confidence
+                    </div>
+                    <div style={{ fontSize: '12px', color: 'var(--ink-dim)' }}>
+                      {selectedFeature.confidence ?? 'Not rated'}
+                    </div>
+                    {selectedFeature.confidence_note && (
+                      <div style={{ fontSize: '10px', color: 'var(--ink-muted)', marginTop: '0.2rem' }}>
+                        {selectedFeature.confidence_note}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '8px', color: 'var(--ink-muted)', letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: '0.3rem' }}>
+                      Source
+                    </div>
+                    <div style={{ fontSize: '12px', color: 'var(--ink-dim)' }}>
+                      {selectedFeature.source ?? 'Manual'}
+                    </div>
+                    {selectedFeature.submitted_by && (
+                      <div style={{ fontSize: '10px', color: 'var(--ink-muted)', marginTop: '0.2rem' }}>
+                        by {selectedFeature.submitted_by}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
-
-              <button
-                onClick={() => handleGenerateBrief(selectedFeature.id)}
-                disabled={generatingBrief === selectedFeature.id}
-                className="btn btn-primary"
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  opacity: generatingBrief === selectedFeature.id ? 0.5 : 1,
-                }}
-              >
-                {generatingBrief === selectedFeature.id
-                  ? 'Generating brief...'
-                  : 'Generate Roadmap Brief →'}
-              </button>
-
-              {briefError && (
-                <div style={{ padding: '0.6rem 0.8rem', border: '1px solid #5a2020', background: '#120808', fontSize: '10px', color: '#ee8870', letterSpacing: '0.06em' }}>
-                  {briefError}
-                </div>
-              )}
             </div>
           ) : (
             <div className="card" style={{ textAlign: 'center', padding: '4rem 2rem' }}>
