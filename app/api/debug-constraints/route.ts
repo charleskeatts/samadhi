@@ -8,14 +8,13 @@ export async function GET() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
-  // Using brute-force approach since we can't query pg_constraint directly
   const admin = createClient(supabaseUrl, serviceRoleKey);
 
-  // Approach: try to extract constraint text by trying lots of values quickly
-  // We already know: Integration, Analytics, Security, Performance work for category
-  // and Negotiation works for deal_stage
-  // Let's try systematic single-word PascalCase from product management domain
+  // Strategy: Try to get the constraint text by querying information_schema
+  // or pg_catalog via the Supabase REST API (which proxies to PostgREST)
 
+  // First, try to read the actual error message more carefully
+  // by inserting with a deliberately wrong value
   const orgId = (await admin.from('organizations').select('id').limit(1)).data?.[0]?.id;
   const accountId = (await admin.from('accounts').select('id').limit(1)).data?.[0]?.id;
 
@@ -23,84 +22,80 @@ export async function GET() {
     return NextResponse.json({ error: 'No org or account found' });
   }
 
-  // Comprehensive category sweep
-  const catValues = [
-    // Already found: Integration, Analytics, Security, Performance
-    'Scalability', 'Reliability', 'Usability', 'Accessibility',
-    'Compliance', 'Pricing', 'Billing', 'Authentication',
-    'Authorization', 'Deployment', 'Monitoring', 'Logging',
-    'Testing', 'Documentation', 'Training', 'Migration',
-    'Customization', 'Configuration', 'Notification', 'Communication',
-    'Collaboration', 'Search', 'Navigation', 'Visualization',
-    'Export', 'Import', 'Sync', 'Backup', 'Recovery',
-    'AI', 'ML', 'Automation', 'Workflow', 'Pipeline',
-    'Dashboard', 'Report', 'Alert', 'Webhook',
-    'Plugin', 'Extension', 'Widget', 'Theme',
-    'Other', 'Misc', 'Unknown', 'None',
-    'UX', 'UI', 'Design', 'Frontend', 'Backend',
-    'Database', 'API', 'SDK', 'CLI',
-    'Mobile', 'Desktop', 'Web', 'Native',
-  ];
+  // Get the raw error for deal_stage constraint
+  const { error: rawError } = await admin.from('feature_requests').insert({
+    organization_id: orgId, account_id: accountId,
+    feature_name: `constraint-test`, category: 'Integration',
+    deal_stage: 'DELIBERATELY_INVALID_VALUE_12345', blocker_score: 1,
+  });
 
-  // Comprehensive deal_stage sweep  
+  // Now try many more deal_stage patterns - lowercase, snake_case, etc.
   const dsValues = [
-    // Already found: Negotiation
-    'Prospecting', 'Qualification', 'Discovery', 'Evaluation',
-    'Proposal', 'Closed Won', 'Closed Lost', 'Demo',
-    'Closed-Won', 'Closed-Lost', 'ClosedWon', 'ClosedLost',
-    // Single-word stages
-    'Lead', 'Contact', 'Opportunity', 'Customer',
-    'Churned', 'Trial', 'Pilot', 'POC',
-    'Onboarding', 'Renewal', 'Upsell', 'Expansion',
-    // Number-based stages
-    'Stage 1', 'Stage 2', 'Stage 3', 'Stage 4', 'Stage 5',
-    'S1', 'S2', 'S3', 'S4', 'S5',
-    // With slashes or dashes
-    'Pre-Sales', 'Post-Sales', 'Pre-sale', 'Post-sale',
-    // Initial/Exploration stages
-    'Awareness', 'Interest', 'Consideration', 'Intent',
-    'Purchase', 'Retention', 'Advocacy',
+    // lowercase versions
+    'negotiation', 'prospecting', 'qualification', 'discovery',
+    'evaluation', 'proposal', 'closed_won', 'closed_lost',
+    'demo', 'active', 'new_business', 'expansion', 'renewal',
+    'at_risk', 'backlog', 'planned', 'in_progress', 'shipped',
+    'won', 'lost', 'open', 'closed', 'pending', 'stale',
+    // UPPER_CASE
+    'NEGOTIATION', 'PROSPECTING', 'QUALIFICATION', 'DISCOVERY',
+    // MixedCase / CRM-style
+    'New Business', 'Active', 'Expansion', 'Renewal', 'At Risk',
+    'In Progress', 'Closed Won', 'Closed Lost',
+    'Backlog', 'Planned', 'Shipped', 'Stale', 'Won', 'Lost',
+    'Open', 'Closed', 'Pending',
+    // Salesforce standard stages
+    'Value Proposition', 'Id. Decision Makers', 'Perception Analysis',
+    'Needs Analysis',
+    // Short codes
+    'new', 'active', 'risk', 'churn',
+    // HubSpot stages
+    'appointmentscheduled', 'qualifiedtobuy', 'presentationscheduled',
+    'decisionmakerboughtin', 'contractsent', 'closedwon', 'closedlost',
+    // Pipeline stages
+    'pipeline', 'forecast', 'commit', 'upside', 'omitted',
+    // Product stages
+    'triage', 'review', 'approved', 'rejected', 'deferred',
+    'Todo', 'Doing', 'Done', 'Blocked',
+    'todo', 'doing', 'done', 'blocked',
+    // snake_case product stages
+    'new_business', 'at_risk', 'in_progress',
+    'closed_won', 'closed_lost',
   ];
-
-  const catResults: Record<string, string> = {};
-  for (const cat of catValues) {
-    const { error } = await admin.from('feature_requests').insert({
-      organization_id: orgId, account_id: accountId,
-      feature_name: `sweep-${cat}`, category: cat,
-      deal_stage: 'Negotiation', blocker_score: 1,
-    });
-    if (error) {
-      catResults[cat] = error.message.includes('category') ? 'REJECTED' : `OTHER: ${error.message}`;
-    } else {
-      catResults[cat] = 'ACCEPTED';
-      await admin.from('feature_requests').delete().eq('feature_name', `sweep-${cat}`).eq('organization_id', orgId);
-    }
-  }
 
   const dsResults: Record<string, string> = {};
   for (const ds of dsValues) {
     const { error } = await admin.from('feature_requests').insert({
       organization_id: orgId, account_id: accountId,
-      feature_name: `sweep-ds-${ds}`, category: 'Integration',
+      feature_name: `sweep2-${ds}`, category: 'Integration',
       deal_stage: ds, blocker_score: 1,
     });
     if (error) {
-      dsResults[ds] = error.message.includes('deal_stage') ? 'REJECTED' : `OTHER: ${error.message}`;
+      dsResults[ds] = error.message.includes('deal_stage')
+        ? 'REJECTED'
+        : `OTHER: ${error.message.slice(0, 120)}`;
     } else {
       dsResults[ds] = 'ACCEPTED';
-      await admin.from('feature_requests').delete().eq('feature_name', `sweep-ds-${ds}`).eq('organization_id', orgId);
+      await admin.from('feature_requests').delete()
+        .eq('feature_name', `sweep2-${ds}`)
+        .eq('organization_id', orgId);
     }
   }
 
-  const acceptedCats = Object.entries(catResults).filter(([_, v]) => v === 'ACCEPTED').map(([k]) => k);
-  const acceptedDS = Object.entries(dsResults).filter(([_, v]) => v === 'ACCEPTED').map(([k]) => k);
+  const accepted = Object.entries(dsResults)
+    .filter(([_, v]) => v === 'ACCEPTED')
+    .map(([k]) => k);
 
   return NextResponse.json({
-    summary: {
-      acceptedCategories: ['Integration', 'Analytics', 'Security', 'Performance', ...acceptedCats],
-      acceptedDealStages: ['Negotiation', ...acceptedDS],
+    rawErrorMessage: rawError?.message || 'No error',
+    rawErrorDetails: rawError?.details || 'No details',
+    rawErrorHint: (rawError as any)?.hint || 'No hint',
+    rawErrorCode: (rawError as any)?.code || 'No code',
+    previouslyFound: {
+      categories: ['Integration', 'Analytics', 'Security', 'Performance'],
+      dealStages: ['Negotiation'],
     },
-    newCategoryResults: catResults,
-    newDealStageResults: dsResults,
+    newAccepted: accepted,
+    allNewResults: dsResults,
   });
 }
