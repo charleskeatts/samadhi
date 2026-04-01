@@ -86,73 +86,23 @@ export async function POST() {
     console.log(`[demo] created org ${org.id} (${companyName})`);
 
     // 4. Create profile
-    // First attempt: standard insert via Supabase JS client
-    let profileCreated = false;
     const { error: profileError } = await admin
       .from('profiles')
       .insert({
         id: userId,
-        org_id: org.id,
+        organization_id: org.id,
         full_name: 'Demo User',
         role: 'admin',
       });
 
     if (profileError) {
-      console.warn('[demo] profile insert via JS client failed:', profileError.message);
-
-      // If PostgREST schema cache is stale, try sending NOTIFY to reload it,
-      // then retry. This uses a raw SQL call via the Supabase SQL endpoint.
-      if (profileError.message.includes('schema cache')) {
-        console.log('[demo] attempting schema cache reload via NOTIFY pgrst...');
-        try {
-          // NOTIFY pgrst, 'reload schema' tells PostgREST to refresh its cache
-          await fetch(`${supabaseUrl}/rest/v1/rpc/`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'apikey': serviceRoleKey,
-              'Authorization': `Bearer ${serviceRoleKey}`,
-            },
-            body: '{}',
-          }).catch(() => {});
-
-          // Wait for cache reload
-          await new Promise((r) => setTimeout(r, 2000));
-
-          // Retry the insert
-          const { error: retryError } = await admin
-            .from('profiles')
-            .insert({
-              id: userId,
-              org_id: org.id,
-              full_name: 'Demo User',
-              role: 'admin',
-            });
-
-          if (!retryError) {
-            profileCreated = true;
-            console.log('[demo] profile created on retry after cache reload');
-          } else {
-            console.error('[demo] profile retry also failed:', retryError.message);
-          }
-        } catch (e) {
-          console.error('[demo] schema cache reload attempt failed:', e);
-        }
-      }
-
-      if (!profileCreated) {
-        console.error('[demo] profile creation failed permanently:', profileError.message);
-        await admin.from('organizations').delete().eq('id', org.id);
-        await admin.auth.admin.deleteUser(userId);
-        return NextResponse.json(
-          {
-            error: `Failed to create demo profile: ${profileError.message}. Please go to Supabase Dashboard > Settings > API > Reload schema cache, then try again.`,
-          },
-          { status: 500 }
-        );
-      }
-    } else {
-      profileCreated = true;
+      console.error('[demo] profile creation failed:', profileError.message);
+      await admin.from('organizations').delete().eq('id', org.id);
+      await admin.auth.admin.deleteUser(userId);
+      return NextResponse.json(
+        { error: `Failed to create demo profile: ${profileError.message}` },
+        { status: 500 }
+      );
     }
 
     console.log(`[demo] created profile for user ${userId}`);

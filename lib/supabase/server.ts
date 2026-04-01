@@ -50,11 +50,11 @@ export async function getAuthProfile() {
 
   const { data: profile } = await admin
     .from('profiles')
-    .select('id, org_id, full_name, role')
+    .select('id, organization_id, full_name, role')
     .eq('id', user.id)
     .single();
 
   if (!profile) return null;
 
-  return { user, profile, orgId: profile.org_id, admin };
+  return { user, profile, orgId: profile.organization_id, admin };
 }

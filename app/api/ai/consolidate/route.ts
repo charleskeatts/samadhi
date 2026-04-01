@@ -1,38 +1,30 @@
-/**
- * Consolidate feedback API endpoint
- * Called by Vercel cron job every night at 2 AM
- * Groups similar feature_request feedback and creates consolidated features
- */
-
 import { NextRequest, NextResponse } from 'next/server';
-import { consolidateFeedback } from '@/lib/anthropic/consolidate';
+import { consolidateFeatureRequests } from '@/lib/anthropic/consolidate';
+import { createClient as createServiceClient } from '@supabase/supabase-js';
 
 export async function POST(request: NextRequest) {
+  const authHeader = request.headers.get('authorization');
+  if (process.env.NODE_ENV === 'production' && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
-    // Validate cron secret if this is being called by Vercel Cron
-    const authHeader = request.headers.get('authorization');
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      // Allow requests without secret during development
-      if (process.env.NODE_ENV === 'production') {
-        return NextResponse.json(
-          { error: 'Unauthorized' },
-          { status: 401 }
-        );
-      }
-    }
-
-    // Run consolidation
-    const result = await consolidateFeedback();
-
-    return NextResponse.json({
-      success: true,
-      ...result,
-    });
-  } catch (error) {
-    console.error('Error consolidating feedback:', error);
-    return NextResponse.json(
-      { error: 'Failed to consolidate feedback' },
-      { status: 500 }
+    const admin = createServiceClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
+
+    const { data: features } = await admin
+      .from('feature_requests')
+      .select('id, feature_name, notes, blocker_score, accounts:account_id(name, arr)')
+      .order('created_at', { ascending: false })
+      .limit(100);
+
+    const result = await consolidateFeatureRequests((features || []) as any);
+
+    return NextResponse.json({ success: true, ...result });
+  } catch (error) {
+    console.error('Error consolidating:', error);
+    return NextResponse.json({ error: 'Failed to consolidate' }, { status: 500 });
   }
 }

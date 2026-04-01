@@ -1,125 +1,62 @@
-/**
- * Claude-powered feedback classification agent
- * Takes raw feedback text and classifies it into category, sentiment, urgency, etc.
- */
-
 import Anthropic from '@anthropic-ai/sdk';
-import { createClient } from '@/lib/supabase/server';
-import { FeedbackCategory, Sentiment, ClassifyResult } from '@/types';
 
 const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-/**
- * Classify a piece of feedback using Claude
- * Returns structured categorization including urgency, sentiment, and category
- */
-export async function classifyFeedback(
-  feedbackId: string,
-  rawText: string,
+export interface ClassifyResult {
+  feature_request_id: string;
+  category: string;
+  blocker_score: number;
+  tags: string[];
+}
+
+export async function classifyFeatureRequest(
+  featureRequestId: string,
+  featureName: string,
+  notes: string,
   accountName: string,
   arr: number
 ): Promise<ClassifyResult> {
-  // Build context for Claude
-  const context = `You are a product manager analyzing customer feedback from sales calls.
-  
+  const context = `You are a product manager analyzing customer feature requests from sales calls.
+
 Customer: ${accountName}
 Account ARR: $${arr.toLocaleString()}
-Raw Feedback: "${rawText}"
+Feature Request: "${featureName}"
+Notes: "${notes}"
 
-Analyze this feedback and respond with ONLY valid JSON (no markdown, no code blocks) in this exact format:
+Analyze this and respond with ONLY valid JSON (no markdown, no code blocks):
 {
-  "category": "feature_request|bug_report|churn_risk|competitive_intel|pricing_concern|general",
-  "sentiment": "positive|neutral|negative",
-  "urgency_score": 1-10,
+  "category": "Integration|Analytics|Core Product|UX|Performance|Security|Reporting|API",
+  "blocker_score": 1-5,
   "tags": ["tag1", "tag2"]
-}`;
+}
+
+blocker_score: 5=Critical deal blocker, 4=High priority, 3=Medium, 2=Nice to have, 1=Minimal impact`;
 
   try {
     const response = await client.messages.create({
       model: 'claude-opus-4-6',
-      max_tokens: 500,
-      messages: [
-        {
-          role: 'user',
-          content: context,
-        },
-      ],
+      max_tokens: 300,
+      messages: [{ role: 'user', content: context }],
     });
 
-    // Extract text content from response
-    const responseText =
-      response.content[0].type === 'text' ? response.content[0].text : '';
-
-    // Parse JSON response
-    const classified = JSON.parse(responseText);
-
-    // Validate and sanitize the response
-    const category = validateCategory(classified.category);
-    const sentiment = validateSentiment(classified.sentiment);
-    const urgency = Math.max(1, Math.min(10, parseInt(classified.urgency_score) || 5));
-
-    // Update the feedback record in Supabase
-    const supabase = await createClient();
-    await supabase
-      .from('feedback')
-      .update({
-        category,
-        sentiment,
-        urgency_score: urgency,
-        ai_processed: true,
-      })
-      .eq('id', feedbackId);
+    const text = response.content[0].type === 'text' ? response.content[0].text : '';
+    const parsed = JSON.parse(text);
 
     return {
-      feedback_id: feedbackId,
-      category,
-      sentiment,
-      urgency_score: urgency,
-      tags: classified.tags || [],
+      feature_request_id: featureRequestId,
+      category: parsed.category || 'Core Product',
+      blocker_score: Math.max(1, Math.min(5, parseInt(parsed.blocker_score) || 3)),
+      tags: parsed.tags || [],
     };
   } catch (error) {
-    console.error('Error classifying feedback:', error);
-    
-    // Mark as processed even on error to avoid infinite loops
-    const supabase = await createClient();
-    await supabase
-      .from('feedback')
-      .update({ ai_processed: true })
-      .eq('id', feedbackId);
-
-    // Return a default classification
+    console.error('Error classifying feature request:', error);
     return {
-      feedback_id: feedbackId,
-      category: 'uncategorized',
-      sentiment: 'neutral',
-      urgency_score: 5,
+      feature_request_id: featureRequestId,
+      category: 'Core Product',
+      blocker_score: 3,
       tags: [],
     };
   }
-}
-
-/**
- * Validate that category is one of the allowed values
- */
-function validateCategory(cat: string): FeedbackCategory {
-  const valid = [
-    'feature_request',
-    'bug_report',
-    'churn_risk',
-    'competitive_intel',
-    'pricing_concern',
-    'general',
-    'uncategorized',
-  ];
-  return valid.includes(cat) ? (cat as FeedbackCategory) : 'uncategorized';
-}
-
-/**
- * Validate that sentiment is one of the allowed values
- */
-function validateSentiment(sent: string): Sentiment {
-  const valid = ['positive', 'neutral', 'negative'];
-  return valid.includes(sent) ? (sent as Sentiment) : 'neutral';
 }

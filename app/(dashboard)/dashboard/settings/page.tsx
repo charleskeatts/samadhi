@@ -7,12 +7,11 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Profile, Organization } from '@/types';
 import type { Role } from '@/types';
 
 export default function SettingsPage() {
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [org, setOrg] = useState<Organization | null>(null);
+  const [profile, setProfile] = useState<any>(null);
+  const [org, setOrg] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -44,7 +43,7 @@ export default function SettingsPage() {
           const { data: orgData } = await supabase
             .from('organizations')
             .select('*')
-            .eq('id', profileData.org_id)
+            .eq('id', profileData.organization_id)
             .single();
 
           if (orgData) setOrg(orgData);
@@ -74,7 +73,7 @@ export default function SettingsPage() {
 
       if (updateError) throw updateError;
 
-      setProfile((prev) => prev ? { ...prev, full_name: fullName.trim(), role } : prev);
+      setProfile((prev: any) => prev ? { ...prev, full_name: fullName.trim(), role } : prev);
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
