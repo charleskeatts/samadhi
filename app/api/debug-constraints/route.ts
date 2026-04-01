@@ -16,55 +16,60 @@ export async function GET() {
     return NextResponse.json({ error: 'No org or account found' });
   }
 
-  // We know: Negotiation, Qualified work
-  // These are standard Salesforce-like opportunity stages
-  // Standard SFDC has: Prospecting, Qualification, Needs Analysis, Value Proposition,
-  //   Id. Decision Makers, Perception Analysis, Proposal/Price Quote, Negotiation/Review, Closed Won, Closed Lost
-  // But "Qualification" was rejected while "Qualified" works
-  // And "Negotiation" works but "Negotiation/Review" was likely rejected
-  // This suggests a CUSTOM enum. Let me try systematic patterns.
+  // KNOWN: Prospect, Qualified, Negotiation
+  // Pattern: Single PascalCase words that represent CRM deal stages
+  // These follow a typical sales pipeline progression:
+  //   Prospect -> Qualified -> ??? -> Negotiation -> ???
+  // Let's try ALL possible single-word pipeline stages
 
   const stages = [
-    // Single-word past tense / adjective forms (like "Qualified", "Negotiation")
-    'Contacted', 'Presented', 'Proposed', 'Committed', 'Converted',
-    'Engaged', 'Evaluated', 'Assessed', 'Confirmed', 'Signed',
-    'Renewed', 'Churned', 'Escalated', 'Resolved',
-    // Single-word nouns (like "Negotiation")
-    'Presentation', 'Confirmation', 'Assessment', 'Engagement',
-    'Implementation', 'Conversion', 'Procurement', 'Onboarding',
-    'Retention', 'Advocacy', 'Exploration',
-    // Common pipeline stages
-    'Prospect', 'Lead', 'Champion', 'Stakeholder',
-    // Status-like
-    'Active', 'Inactive', 'Stalled', 'Pending', 'Paused',
-    // Opportunity result stages
-    'Won', 'Lost', 'Closed',
-    // MEDDIC
-    'Identified', 'Validated', 'Confirmed',
-    // Custom product stages (since this is a product intelligence tool)
-    'Requested', 'Acknowledged', 'Planned', 'Developing', 'Shipped',
-    'Rejected', 'Deferred', 'Archived',
-    // More deal stage variations
-    'Initial', 'Discovery', 'Solution', 'Proposal', 'Review',
-    'Trial', 'Pilot', 'POC', 'Demo', 'Contract',
-    // Possibly the constraint mirrors common CRM deal_stage values
-    'Open', 'InProgress', 'ClosedWon', 'ClosedLost',
-    // Try with spaces
-    'In Progress', 'Closed Won', 'Closed Lost', 'At Risk',
-    'New Business', 'Under Review',
-    // camelCase
-    'inProgress', 'closedWon', 'closedLost', 'atRisk', 'newBusiness',
-    // Standard Salesforce exactly
-    'Prospecting', 'Needs Analysis', 'Value Proposition',
-    'Id. Decision Makers', 'Perception Analysis',
-    'Proposal/Price Quote', 'Negotiation/Review',
+    // Between Prospect and Qualified
+    'Contacted', 'Connected', 'Engaged', 'Interested',
+    'Responded', 'Scheduled', 'Meeting', 'Called',
+    
+    // Between Qualified and Negotiation  
+    'Proposed', 'Presented', 'Demonstrated', 'Evaluated',
+    'Reviewed', 'Analyzed', 'Scoped', 'Quoted',
+    'Pitched', 'Benchmarked',
+    
+    // After Negotiation
+    'Committed', 'Signed', 'Contracted', 'Purchased',
+    'Onboarded', 'Activated', 'Deployed', 'Live',
+    'Closed', 'Won', 'Lost', 'Churned',
+    'Renewed', 'Expanded', 'Upgraded',
+    
+    // Stalled / negative outcomes
+    'Stalled', 'Paused', 'Dormant', 'Frozen',
+    'Rejected', 'Declined', 'Abandoned', 'Disqualified',
+    
+    // Standard CRM pipeline words (PascalCase)
+    'Awareness', 'Interest', 'Consideration', 'Intent',
+    'Evaluation', 'Decision', 'Purchase', 'Retention',
+    'Advocacy', 'Referral',
+    
+    // B2B specific
+    'Discovery', 'Alignment', 'Validation', 'Justification',
+    'Selection', 'Procurement', 'Implementation',
+    'Adoption', 'Expansion', 'Renewal',
+    
+    // Concise sales stages  
+    'Lead', 'Opportunity', 'Customer', 'Champion',
+    'Sponsor', 'Buyer', 'User',
+    
+    // Technical sales
+    'POC', 'Pilot', 'Trial', 'Beta',
+    
+    // Product / Feature-specific stages (this IS a product tool)
+    'Requested', 'Triaged', 'Prioritized', 'Planned',
+    'Building', 'Shipping', 'Shipped', 'Released',
+    'Backlog', 'Roadmap',
   ];
 
   const stageResults: Record<string, string> = {};
   for (const ds of stages) {
     const { error } = await admin.from('feature_requests').insert({
       organization_id: orgId, account_id: accountId,
-      feature_name: `sweep5-${ds}`, category: 'Integration',
+      feature_name: `sweep6-${ds}`, category: 'Integration',
       deal_stage: ds, blocker_score: 1,
     });
     if (error) {
@@ -72,7 +77,7 @@ export async function GET() {
     } else {
       stageResults[ds] = 'ACCEPTED';
       await admin.from('feature_requests').delete()
-        .eq('feature_name', `sweep5-${ds}`)
+        .eq('feature_name', `sweep6-${ds}`)
         .eq('organization_id', orgId);
     }
   }
@@ -84,9 +89,10 @@ export async function GET() {
   return NextResponse.json({
     knownValid: {
       categories: ['Integration', 'Analytics', 'Security', 'Performance'],
-      dealStages: ['Negotiation', 'Qualified'],
+      dealStages: ['Prospect', 'Qualified', 'Negotiation'],
     },
     newlyAccepted: accepted,
+    totalAccepted: ['Prospect', 'Qualified', 'Negotiation', ...accepted],
     stageResults,
   });
 }
