@@ -105,14 +105,16 @@ export async function POST() {
     console.log(`[demo] created/updated profile for user ${userId}`);
 
     // 5. Seed demo data
+    let seedError: string | null = null;
     try {
       await seedDemoAccounts(admin, org.id, userId);
-    } catch (err) {
+    } catch (err: any) {
       console.error('[demo] seed failed (non-fatal):', err);
+      seedError = err?.message || String(err);
     }
 
     // 6. Return credentials for client-side sign-in
-    return NextResponse.json({ email, password, orgName: companyName });
+    return NextResponse.json({ email, password, orgName: companyName, seedError });
   } catch (err) {
     console.error('[demo] unexpected error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
