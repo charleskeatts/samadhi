@@ -17,93 +17,78 @@ export async function GET() {
   const orgId = orgs[0].id;
   const accountId = accts[0].id;
 
-  // Broad sweep of category values - every possible option
-  const categoryValues = [
-    // From feedback table constraint
-    'feature_request', 'bug_report', 'churn_risk', 'competitive_intel', 
-    'pricing_concern', 'general', 'uncategorized',
-    // PascalCase / Mixed case variations
-    'Feature Request', 'Bug Report', 'General', 'Integration', 'Analytics',
-    // Other possibilities
-    'integration', 'analytics', 'ux', 'security', 'performance',
-    'infrastructure', 'enhancement', 'platform', 'api', 'mobile',
-    'reporting', 'export', 'import', 'automation', 'workflow',
+  // We know Integration is a valid category, test more deal_stage PascalCase values
+  const dealStageValues = [
+    // PascalCase variants
+    'Prospecting', 'Qualification', 'Proposal', 'Negotiation',
+    'Closed Won', 'Closed Lost', 'Discovery', 'Evaluation',
+    'Active', 'Renewal', 'Expansion', 'Onboarding',
+    'Demo', 'Trial', 'Contract', 'Implementation',
+    'At Risk', 'New Business', 'Upsell', 'Cross-Sell',
+    // Title Case single words
+    'New', 'Open', 'Won', 'Lost', 'Pending', 'Review',
+    // Exactly like Salesforce standard stages
+    'Perception Analysis', 'Value Proposition', 'Id. Decision Makers',
+    'Needs Analysis', 'Proposal/Price Quote',
+    // Common CRM stages
+    'Lead', 'Opportunity', 'Decision', 'Verbal Commitment',
   ];
-  
-  const categoryResults: Record<string, string> = {};
 
-  for (const cat of categoryValues) {
+  const results: Record<string, string> = {};
+
+  for (const ds of dealStageValues) {
     const { error } = await admin
       .from('feature_requests')
       .insert({
         organization_id: orgId,
         account_id: accountId,
-        feature_name: `cat-test-${cat}`,
-        category: cat,
-        deal_stage: 'discovery',
+        feature_name: `ds2-test-${ds}`,
+        category: 'Integration',
+        deal_stage: ds,
         blocker_score: 1,
       });
     
     if (error) {
-      // Check if the error is about category or deal_stage
-      categoryResults[cat] = error.message.includes('category') 
-        ? 'CATEGORY_REJECTED'
-        : error.message.includes('deal_stage')
-          ? 'DEAL_STAGE_REJECTED'
-          : `OTHER: ${error.message}`;
+      results[ds] = error.message.includes('deal_stage') ? 'REJECTED' : `OTHER: ${error.message}`;
     } else {
-      categoryResults[cat] = 'ACCEPTED';
-      await admin.from('feature_requests').delete()
-        .eq('feature_name', `cat-test-${cat}`)
-        .eq('organization_id', orgId);
+      results[ds] = 'ACCEPTED';
+      await admin.from('feature_requests').delete().eq('feature_name', `ds2-test-${ds}`).eq('organization_id', orgId);
     }
   }
 
-  // Now test deal_stage using any accepted category
-  const goodCategory = Object.entries(categoryResults).find(([_, v]) => v === 'ACCEPTED')?.[0] 
-    || Object.entries(categoryResults).find(([_, v]) => v === 'DEAL_STAGE_REJECTED')?.[0];
-  
-  const dealStageValues = [
-    'discovery', 'evaluation', 'negotiation', 'closed_won', 'closed_lost',
-    'active', 'backlog', 'planned', 'in_progress', 'shipped',
-    'prospecting', 'qualification', 'proposal', 'contract',
-    'new', 'open', 'won', 'lost',
-    'Discovery', 'Evaluation', 'Negotiation', 'Closed Won', 'Active',
-    'Renewal', 'Expansion', 'At Risk', 'New Business',
+  // Also test more categories with known-good deal_stage 'Negotiation'
+  const moreCategories = [
+    'UX', 'Security', 'Performance', 'Infrastructure', 'Platform',
+    'API', 'Mobile', 'Reporting', 'Data', 'Billing',
+    'Compliance', 'Onboarding', 'Support', 'Documentation',
+    'Automation', 'Workflow', 'Dashboard', 'Notification',
+    'Export', 'Import', 'Search', 'Admin',
   ];
-  const dealStageResults: Record<string, string> = {};
+  const catResults: Record<string, string> = {};
 
-  if (goodCategory) {
-    for (const ds of dealStageValues) {
-      const { error } = await admin
-        .from('feature_requests')
-        .insert({
-          organization_id: orgId,
-          account_id: accountId,
-          feature_name: `ds-test-${ds}`,
-          category: goodCategory,
-          deal_stage: ds,
-          blocker_score: 1,
-        });
-      
-      if (error) {
-        dealStageResults[ds] = error.message.includes('deal_stage')
-          ? 'DEAL_STAGE_REJECTED'
-          : error.message.includes('category')
-            ? 'CATEGORY_REJECTED'
-            : `OTHER: ${error.message}`;
-      } else {
-        dealStageResults[ds] = 'ACCEPTED';
-        await admin.from('feature_requests').delete()
-          .eq('feature_name', `ds-test-${ds}`)
-          .eq('organization_id', orgId);
-      }
+  for (const cat of moreCategories) {
+    const { error } = await admin
+      .from('feature_requests')
+      .insert({
+        organization_id: orgId,
+        account_id: accountId,
+        feature_name: `cat2-test-${cat}`,
+        category: cat,
+        deal_stage: 'Negotiation',
+        blocker_score: 1,
+      });
+    
+    if (error) {
+      catResults[cat] = error.message.includes('category') ? 'REJECTED' : `OTHER: ${error.message}`;
+    } else {
+      catResults[cat] = 'ACCEPTED';
+      await admin.from('feature_requests').delete().eq('feature_name', `cat2-test-${cat}`).eq('organization_id', orgId);
     }
   }
 
   return NextResponse.json({
-    goodCategory,
-    categoryResults,
-    dealStageResults,
+    knownGood: { category: 'Integration', dealStage: 'Negotiation' },
+    dealStageResults: results,
+    categoryResults: catResults,
   });
 }
