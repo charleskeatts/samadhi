@@ -1,13 +1,15 @@
 /**
  * Revenue Priority Backlog
  * Feature requests with table and kanban views.
- * Uses actual DB schema: feature_requests joined with accounts for ARR data.
+ * Fetches data via /api/features to bypass RLS issues.
+ *
+ * VALID deal_stage: Prospect | Qualified | Negotiation
+ * VALID category:   Integration | Analytics | Security | Performance
  */
 
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import { FeatureRequestWithAccount } from '@/types';
 
 type View = 'table' | 'kanban';
@@ -17,23 +19,23 @@ const BLOCKER_LABEL: Record<number, string> = { 5: 'Critical', 4: 'High', 3: 'Me
 const BLOCKER_COLOR: Record<number, string> = {
   5: 'var(--red)',
   4: 'var(--orange)',
-  3: 'var(--gold)',
+  3: 'var(--accent)',
   2: 'var(--green)',
   1: 'var(--border-bright)',
 };
 
 const STAGE_DISPLAY: Record<string, string> = {
-  backlog:      'Not Started',
-  planned:      'Planned',
-  in_progress:  'In Progress',
-  shipped:      'Shipped',
+  'Prospect':    'Prospect',
+  'Qualified':   'Qualified',
+  'Negotiation': 'Negotiation',
 };
 const STAGE_COLOR: Record<string, string> = {
-  backlog:      'var(--border-bright)',
-  planned:      '#3a7bd5',
-  in_progress:  'var(--gold-dim)',
-  shipped:      'var(--green)',
+  'Prospect':    '#38bdf8',
+  'Qualified':   'var(--green)',
+  'Negotiation': 'var(--orange)',
 };
+
+const KANBAN_STAGES = ['Prospect', 'Qualified', 'Negotiation'];
 
 function fmt(n: number): string {
   if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
@@ -56,16 +58,18 @@ export default function BacklogPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => {
-    const supabase = createClient();
     const load = async () => {
-      const { data: feats } = await supabase
-        .from('feature_requests')
-        .select('*, accounts:account_id (id, name, arr)')
-        .order('blocker_score', { ascending: false });
-
-      if (!feats?.length) { setLoading(false); return; }
-      setFeatures(feats as FeatureRequestWithAccount[]);
-      setLoading(false);
+      try {
+        const res = await fetch('/api/features');
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setFeatures(data);
+        }
+      } catch (err) {
+        console.error('Error loading features:', err);
+      } finally {
+        setLoading(false);
+      }
     };
     load();
   }, []);
@@ -107,15 +111,12 @@ export default function BacklogPage() {
             No features yet
           </div>
           <p style={{ fontSize: '10px', color: 'var(--border-bright)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
-            Feature requests will appear here once data is submitted.
+            Add feature requests on the Customer Signals page.
           </p>
         </div>
       </div>
     );
   }
-
-  // Kanban stages come from deal_stage
-  const kanbanStages = ['backlog', 'planned', 'in_progress', 'shipped'];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -143,7 +144,7 @@ export default function BacklogPage() {
       {/* KPI row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
         {[
-          { label: 'Total ARR at Risk', value: fmt(totalARR), accent: 'var(--gold)' },
+          { label: 'Total ARR at Risk', value: fmt(totalARR), accent: 'var(--accent)' },
           { label: 'Critical Blockers', value: String(criticalCount), accent: 'var(--red)' },
           { label: 'Accounts Affected', value: String(uniqueAccounts), accent: 'var(--orange)' },
           { label: 'Filtered ARR', value: fmt(filteredARR), accent: 'var(--green)' },
@@ -183,7 +184,7 @@ export default function BacklogPage() {
                 textTransform: 'uppercase',
                 cursor: 'pointer',
                 background: filterCategory === cat ? 'rgba(56,189,248,0.08)' : 'transparent',
-                color: filterCategory === cat ? 'var(--gold)' : 'var(--ink-muted)',
+                color: filterCategory === cat ? 'var(--accent)' : 'var(--ink-muted)',
                 border: filterCategory === cat ? '1px solid rgba(56,189,248,0.3)' : '1px solid var(--border)',
                 transition: 'all 0.15s',
                 fontFamily: '"DM Mono", monospace',
@@ -206,7 +207,7 @@ export default function BacklogPage() {
                 textTransform: 'uppercase',
                 cursor: 'pointer',
                 background: sortBy === key ? 'rgba(56,189,248,0.08)' : 'transparent',
-                color: sortBy === key ? 'var(--gold)' : 'var(--ink-muted)',
+                color: sortBy === key ? 'var(--accent)' : 'var(--ink-muted)',
                 border: sortBy === key ? '1px solid rgba(56,189,248,0.3)' : '1px solid var(--border)',
                 fontFamily: '"DM Mono", monospace',
               }}
@@ -247,7 +248,7 @@ export default function BacklogPage() {
             const isSelected = selectedId === f.id;
             const blockerColor = BLOCKER_COLOR[score] || 'var(--border-bright)';
             const accountARR = getARR(f);
-            const stage = f.deal_stage || 'backlog';
+            const stage = f.deal_stage || 'Prospect';
 
             return (
               <div key={f.id}>
@@ -273,7 +274,7 @@ export default function BacklogPage() {
                     fontFamily: '"Cormorant Garamond", serif',
                     fontSize: '1rem',
                     fontStyle: 'italic',
-                    color: i < 3 ? 'var(--gold)' : 'var(--border-bright)',
+                    color: i < 3 ? 'var(--accent)' : 'var(--border-bright)',
                   }}>
                     {i + 1}
                   </div>
@@ -345,9 +346,9 @@ export default function BacklogPage() {
                       <div style={{ fontSize: '11px', color: 'var(--ink-muted)', lineHeight: 1.6 }}>
                         {f.notes || 'No notes provided.'}
                       </div>
-                      {f.confidence != null && (
-                        <div style={{ fontSize: '9px', color: 'var(--gold-dim)', marginTop: '0.5rem' }}>
-                          Confidence: {f.confidence}/5 {f.confidence_note ? `— ${f.confidence_note}` : ''}
+                      {f.confidence_note && (
+                        <div style={{ fontSize: '9px', color: 'var(--accent-dim)', marginTop: '0.5rem' }}>
+                          {f.confidence_note}
                         </div>
                       )}
                     </div>
@@ -367,9 +368,9 @@ export default function BacklogPage() {
         </div>
       ) : (
         /* ── KANBAN VIEW (by deal_stage) ── */
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
-          {kanbanStages.map((stage) => {
-            const cols = filtered.filter((f) => (f.deal_stage || 'backlog') === stage);
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${KANBAN_STAGES.length}, 1fr)`, gap: '1rem' }}>
+          {KANBAN_STAGES.map((stage) => {
+            const cols = filtered.filter((f) => (f.deal_stage || 'Prospect') === stage);
             const colARR = cols.reduce((s, f) => s + getARR(f), 0);
             const stageColor = STAGE_COLOR[stage] || 'var(--border-bright)';
             return (
@@ -395,7 +396,7 @@ export default function BacklogPage() {
                 </div>
                 {cols.length === 0 && (
                   <div style={{ padding: '1.5rem 0', textAlign: 'center', fontSize: '9px', color: 'var(--border-bright)', letterSpacing: '0.12em' }}>
-                    empty
+                    —
                   </div>
                 )}
                 {cols.map((f) => {
@@ -454,12 +455,12 @@ export default function BacklogPage() {
         <div>
           Showing <span style={{ color: 'var(--ink-dim)' }}>{filtered.length} features</span>
           {' · '}
-          ARR at risk: <span style={{ color: 'var(--gold)', fontFamily: '"DM Mono", monospace' }}>{fmt(filteredARR)}</span>
+          ARR at risk: <span style={{ color: 'var(--accent)', fontFamily: '"DM Mono", monospace' }}>{fmt(filteredARR)}</span>
         </div>
         <div style={{ display: 'flex', gap: '1rem' }}>
           <span style={{ color: 'var(--red)' }}>{filtered.filter((f) => (f.blocker_score ?? 0) >= 5).length} Critical</span>
           <span style={{ color: 'var(--orange)' }}>{filtered.filter((f) => (f.blocker_score ?? 0) === 4).length} High</span>
-          <span style={{ color: 'var(--gold-dim)' }}>{filtered.filter((f) => (f.blocker_score ?? 0) === 3).length} Medium</span>
+          <span style={{ color: 'var(--accent-dim)' }}>{filtered.filter((f) => (f.blocker_score ?? 0) === 3).length} Medium</span>
         </div>
       </div>
     </div>

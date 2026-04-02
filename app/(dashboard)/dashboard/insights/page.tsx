@@ -1,13 +1,12 @@
 /**
  * AI Insights page
  * Shows feature requests ranked by blocker score and account ARR.
- * Uses actual DB schema: feature_requests joined with accounts.
+ * Fetches data via /api/features to bypass RLS issues.
  */
 
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import { FeatureRequestWithAccount } from '@/types';
 import { formatARR } from '@/lib/utils';
 
@@ -17,15 +16,15 @@ export default function InsightsPage() {
   const [selectedFeature, setSelectedFeature] = useState<FeatureRequestWithAccount | null>(null);
 
   useEffect(() => {
-    const supabase = createClient();
     const fetchFeatures = async () => {
       try {
-        const { data } = await supabase
-          .from('feature_requests')
-          .select('*, accounts:account_id (id, name, arr)')
-          .order('blocker_score', { ascending: false });
-
-        setFeatures((data as FeatureRequestWithAccount[]) || []);
+        const res = await fetch('/api/features');
+        const data = await res.json();
+        // API returns sorted by created_at desc; re-sort by blocker_score desc
+        const sorted = Array.isArray(data)
+          ? data.sort((a: any, b: any) => (b.blocker_score ?? 0) - (a.blocker_score ?? 0))
+          : [];
+        setFeatures(sorted);
       } catch (error) {
         console.error('Error fetching features:', error);
       } finally {
@@ -56,7 +55,7 @@ export default function InsightsPage() {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1.5rem' }}>
         {/* Features list */}
-        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderLeft: '2px solid var(--gold-dim)' }}>
+        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderLeft: '2px solid var(--accent-dim)' }}>
           <div style={{
             padding: '0.85rem 1rem',
             borderBottom: '1px solid var(--border)',
@@ -83,13 +82,13 @@ export default function InsightsPage() {
                     padding: '0.85rem 1rem',
                     borderBottom: '1px solid var(--border)',
                     background: selectedFeature?.id === feature.id ? 'rgba(56,189,248,0.06)' : 'transparent',
-                    borderLeft: selectedFeature?.id === feature.id ? '2px solid var(--gold)' : '2px solid transparent',
+                    borderLeft: selectedFeature?.id === feature.id ? '2px solid var(--accent)' : '2px solid transparent',
                     cursor: 'pointer',
                     transition: 'all 0.15s',
                   }}
                   onMouseEnter={(e) => {
                     if (selectedFeature?.id !== feature.id) {
-                      (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.02)';
+                      (e.currentTarget as HTMLElement).style.background = 'rgba(56,189,248,0.03)';
                     }
                   }}
                   onMouseLeave={(e) => {
@@ -117,7 +116,7 @@ export default function InsightsPage() {
                   No features yet
                 </p>
                 <p style={{ fontSize: '10px', color: 'var(--border-bright)', lineHeight: 1.6, marginBottom: '1rem' }}>
-                  Feature requests will appear here once data is submitted.
+                  Add feature requests on the Customer Signals page.
                 </p>
               </div>
             )}
@@ -147,7 +146,7 @@ export default function InsightsPage() {
                     {selectedFeature.accounts?.name ?? 'Unknown'}
                   </span>
                   <span className="chip">
-                    {selectedFeature.deal_stage ?? 'backlog'}
+                    {selectedFeature.deal_stage ?? 'Prospect'}
                   </span>
                   {selectedFeature.category && (
                     <span className="chip" style={{ color: 'var(--accent)', borderColor: 'rgba(56,189,248,0.35)' }}>
@@ -172,7 +171,7 @@ export default function InsightsPage() {
                     <div style={{ fontSize: '8px', color: 'var(--ink-muted)', letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: '0.3rem' }}>
                       Blocker Score
                     </div>
-                    <div style={{ fontSize: '18px', color: selectedFeature.blocker_score >= 4 ? 'var(--red)' : 'var(--gold)', fontFamily: '"DM Mono", monospace' }}>
+                    <div style={{ fontSize: '18px', color: selectedFeature.blocker_score >= 4 ? 'var(--red)' : 'var(--accent)', fontFamily: '"DM Mono", monospace' }}>
                       {selectedFeature.blocker_score}/5
                     </div>
                   </div>
@@ -181,13 +180,8 @@ export default function InsightsPage() {
                       Confidence
                     </div>
                     <div style={{ fontSize: '12px', color: 'var(--ink-dim)' }}>
-                      {selectedFeature.confidence != null ? `${selectedFeature.confidence}/5` : 'Not rated'}
+                      {selectedFeature.confidence_note || 'Not rated'}
                     </div>
-                    {selectedFeature.confidence_note && (
-                      <div style={{ fontSize: '10px', color: 'var(--ink-muted)', marginTop: '0.2rem' }}>
-                        {selectedFeature.confidence_note}
-                      </div>
-                    )}
                   </div>
                   <div>
                     <div style={{ fontSize: '8px', color: 'var(--ink-muted)', letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: '0.3rem' }}>
@@ -196,11 +190,6 @@ export default function InsightsPage() {
                     <div style={{ fontSize: '12px', color: 'var(--ink-dim)' }}>
                       {selectedFeature.source ?? 'Manual'}
                     </div>
-                    {selectedFeature.submitted_by && (
-                      <div style={{ fontSize: '10px', color: 'var(--ink-muted)', marginTop: '0.2rem' }}>
-                        by {selectedFeature.submitted_by}
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
