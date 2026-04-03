@@ -28,7 +28,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg)' }}>
 
       {/* ── SIDEBAR ── */}
-      <aside style={{
+      <aside className="dash-sidebar" style={{
         width: 220,
         minWidth: 220,
         background: 'var(--ink)',
@@ -151,7 +151,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </aside>
 
       {/* ── MOBILE HEADER ── */}
-      <div style={{
+      <div className="mobile-hdr" style={{
         display: 'none',
         position: 'fixed',
         top: 0,
@@ -163,7 +163,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         padding: '0.9rem 1.2rem',
         alignItems: 'center',
         justifyContent: 'space-between',
-      }} className="mobile-hdr">
+      }}>
         <span style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: '1.3rem', fontWeight: 700, letterSpacing: '-0.02em', color: '#ffffff' }}>
           Cl<span style={{ color: 'var(--teal)', fontStyle: 'italic' }}>ai</span>rio
         </span>
@@ -176,8 +176,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </div>
 
       {/* ── MAIN ── */}
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-        <div style={{ flex: 1, padding: '2.5rem 2.5rem 3rem' }}>
+      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflowX: 'hidden' }}>
+        <div className="dash-main-content" style={{ flex: 1, padding: '2.5rem 2.5rem 3rem' }}>
           {children}
         </div>
         <footer style={{

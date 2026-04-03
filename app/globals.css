@@ -28,10 +28,9 @@
 /* ── RESET & BASE ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { scroll-behavior: smooth; height: 100%; }
+html { scroll-behavior: smooth; }
 
 body {
-  height: 100%;
   background: var(--bg);
   color: var(--ink-dim);
   font-family: 'DM Sans', sans-serif;
@@ -223,3 +222,10 @@ select.input {
 /* ── LINK ── */
 a { color: var(--teal-dk); text-decoration: none; transition: color 0.15s; }
 a:hover { color: var(--teal); }
+
+/* ── RESPONSIVE DASHBOARD LAYOUT ── */
+@media (max-width: 768px) {
+  .mobile-hdr { display: flex !important; }
+  .dash-sidebar { display: none !important; }
+  .dash-main-content { padding-top: 4rem !important; }
+}
