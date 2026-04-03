@@ -280,7 +280,8 @@ a:hover { color: var(--gold); }
 
   /* Backlog table: horizontal scroll container */
   .table-scroll-wrap {
-    overflow-x: auto;
+    overflow-x: auto !important;
+    overflow-y: visible !important;
     -webkit-overflow-scrolling: touch;
   }
   .table-scroll-wrap > div {

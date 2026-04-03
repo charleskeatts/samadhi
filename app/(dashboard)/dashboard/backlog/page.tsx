@@ -220,7 +220,7 @@ export default function BacklogPage() {
 
       {view === 'table' ? (
         /* ── TABLE VIEW ── */
-        <div className="table-scroll-wrap" style={{ border: '1px solid var(--border)', overflow: 'hidden' }}>
+        <div className="table-scroll-wrap" style={{ border: '1px solid var(--border)' }}>
           {/* Header */}
           <div style={{
             display: 'grid',
