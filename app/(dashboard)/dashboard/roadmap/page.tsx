@@ -64,7 +64,7 @@ export default async function RoadmapPage() {
         <p className="page-subtitle">Feature requests by deal stage · ranked by blocker score</p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${columns.length}, 1fr)`, gap: '1.2rem', overflowX: 'auto' }}>
+      <div className="roadmap-kanban" style={{ display: 'grid', gridTemplateColumns: `repeat(${columns.length}, 1fr)`, gap: '1.2rem', overflowX: 'auto' }}>
         {columns.map((stage) => {
           const meta = STAGE_META[stage as DealStage] || { label: stage, color: 'var(--border-bright)', description: '' };
           const items = grouped[stage] || [];

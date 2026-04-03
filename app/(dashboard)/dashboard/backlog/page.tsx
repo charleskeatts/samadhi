@@ -121,7 +121,7 @@ export default function BacklogPage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+      <div className="backlog-header" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <div>
           <h1 className="page-title">Revenue Priority</h1>
           <p className="page-subtitle">Features ranked by account ARR</p>
@@ -142,7 +142,7 @@ export default function BacklogPage() {
       </div>
 
       {/* KPI row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
+      <div className="kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
         {[
           { label: 'Total ARR at Risk', value: fmt(totalARR), accent: 'var(--accent)' },
           { label: 'Critical Blockers', value: String(criticalCount), accent: 'var(--red)' },
@@ -220,7 +220,7 @@ export default function BacklogPage() {
 
       {view === 'table' ? (
         /* ── TABLE VIEW ── */
-        <div style={{ border: '1px solid var(--border)', overflow: 'hidden' }}>
+        <div className="table-scroll-wrap" style={{ border: '1px solid var(--border)', overflow: 'hidden' }}>
           {/* Header */}
           <div style={{
             display: 'grid',
@@ -368,7 +368,7 @@ export default function BacklogPage() {
         </div>
       ) : (
         /* ── KANBAN VIEW (by deal_stage) ── */
-        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${KANBAN_STAGES.length}, 1fr)`, gap: '1rem' }}>
+        <div className="roadmap-kanban" style={{ display: 'grid', gridTemplateColumns: `repeat(${KANBAN_STAGES.length}, 1fr)`, gap: '1rem' }}>
           {KANBAN_STAGES.map((stage) => {
             const cols = filtered.filter((f) => (f.deal_stage || 'Prospect') === stage);
             const colARR = cols.reduce((s, f) => s + getARR(f), 0);

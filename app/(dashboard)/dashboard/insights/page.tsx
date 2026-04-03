@@ -53,7 +53,7 @@ export default function InsightsPage() {
         <p className="page-subtitle">Feature requests ranked by blocker severity and account revenue</p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1.5rem' }}>
+      <div className="insights-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1.5rem' }}>
         {/* Features list */}
         <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderLeft: '2px solid var(--accent-dim)' }}>
           <div style={{

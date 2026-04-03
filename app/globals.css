@@ -28,7 +28,7 @@
 /* ── RESET & BASE ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { scroll-behavior: smooth; height: 100%; }
+html { scroll-behavior: smooth; height: 100%; overflow-x: hidden; }
 
 body {
   height: 100%;
@@ -39,6 +39,7 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
 /* ── AI LOGO HIGHLIGHT ── */
@@ -239,3 +240,79 @@ select.input {
 /* ── LINK ── */
 a { color: var(--gold-dim); text-decoration: none; transition: color 0.15s; }
 a:hover { color: var(--gold); }
+
+/* ── MOBILE RESPONSIVE ── */
+
+/* Show mobile header on small screens */
+@media (max-width: 768px) {
+  .mobile-hdr { display: flex !important; }
+
+  /* Sidebar hidden by default on mobile; shown when .sidebar-open is added */
+  .dashboard-sidebar {
+    position: fixed !important;
+    top: 0;
+    left: -240px;
+    height: 100vh;
+    z-index: 40;
+    transition: left 0.25s ease;
+    box-shadow: 4px 0 20px rgba(0,0,0,0.5);
+  }
+  .dashboard-sidebar.open { left: 0 !important; }
+
+  /* Push main content below mobile header */
+  .dashboard-main {
+    padding-top: 56px !important;
+  }
+  .dashboard-main > div {
+    padding: 1.5rem 1rem 2rem !important;
+  }
+
+  /* Overlay when sidebar is open */
+  .sidebar-overlay {
+    display: block !important;
+  }
+
+  /* KPI grid: 2 cols on mobile */
+  .kpi-grid { grid-template-columns: repeat(2, 1fr) !important; }
+
+  /* Insights: stack list above detail */
+  .insights-grid { grid-template-columns: 1fr !important; }
+
+  /* Backlog table: horizontal scroll container */
+  .table-scroll-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .table-scroll-wrap > div {
+    min-width: 640px;
+  }
+
+  /* Roadmap kanban: horizontal scroll */
+  .roadmap-kanban {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  .roadmap-kanban > div {
+    min-width: 220px;
+  }
+
+  /* Backlog header row: stack buttons */
+  .backlog-header { flex-wrap: wrap; gap: 0.75rem !important; }
+
+  .page-title { font-size: 1.5rem !important; }
+}
+
+/* Tablet tweaks */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .kpi-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .insights-grid { grid-template-columns: 1fr 1.5fr !important; }
+}
+
+/* Sidebar overlay (hidden by default) */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 39;
+}

@@ -24,22 +24,34 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     window.location.href = '/login';
   };
 
+  const closeMenu = () => setOpen(false);
+
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg)' }}>
 
+      {/* ── SIDEBAR OVERLAY (mobile) ── */}
+      <div
+        className="sidebar-overlay"
+        style={{ display: open ? 'block' : 'none' }}
+        onClick={closeMenu}
+      />
+
       {/* ── SIDEBAR ── */}
-      <aside style={{
-        width: 220,
-        minWidth: 220,
-        background: '#081428',
-        borderRight: '1px solid var(--border)',
-        display: 'flex',
-        flexDirection: 'column',
-        flexShrink: 0,
-        position: 'sticky',
-        top: 0,
-        height: '100vh',
-      }}>
+      <aside
+        className={`dashboard-sidebar${open ? ' open' : ''}`}
+        style={{
+          width: 220,
+          minWidth: 220,
+          background: '#081428',
+          borderRight: '1px solid var(--border)',
+          display: 'flex',
+          flexDirection: 'column',
+          flexShrink: 0,
+          position: 'sticky',
+          top: 0,
+          height: '100vh',
+        }}
+      >
 
         {/* Logo */}
         <div style={{
@@ -75,6 +87,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={closeMenu}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -149,19 +162,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </aside>
 
       {/* ── MOBILE HEADER ── */}
-      <div style={{
-        display: 'none',
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 50,
-        background: '#081428',
-        borderBottom: '1px solid var(--border)',
-        padding: '0.9rem 1.2rem',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-      }} className="mobile-hdr">
+      <div
+        className="mobile-hdr"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 50,
+          background: '#081428',
+          borderBottom: '1px solid var(--border)',
+          padding: '0.9rem 1.2rem',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
         <span style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: '1.3rem', fontWeight: 300, letterSpacing: '0.22em', color: 'var(--ink)' }}>
           CL<span className="logo-ai">AI</span>RIO
         </span>
@@ -174,7 +189,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </div>
 
       {/* ── MAIN ── */}
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+      <main className="dashboard-main" style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         <div style={{ flex: 1, padding: '2.5rem 2.5rem 3rem' }}>
           {children}
         </div>
