@@ -103,7 +103,7 @@ export default async function RoadmapPage() {
                         padding: '0.85rem 0.9rem',
                       }}
                     >
-                      <p style={{ fontSize: '12px', color: 'var(--ink-dim)', lineHeight: 1.4, marginBottom: '0.4rem' }}>
+                      <p className="kanban-card-title" style={{ fontSize: '12px', color: 'var(--ink-dim)', lineHeight: 1.4, marginBottom: '0.4rem' }}>
                         {feature.feature_name}
                       </p>
                       <div style={{ fontSize: '9px', color: 'var(--ink-muted)', marginBottom: '0.4rem', letterSpacing: '0.04em' }}>

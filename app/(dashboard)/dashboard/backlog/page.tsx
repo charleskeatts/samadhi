@@ -416,7 +416,7 @@ export default function BacklogPage() {
                       onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--border-bright)'}
                       onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border)'}
                     >
-                      <div style={{ fontSize: '12px', color: 'var(--ink-dim)', lineHeight: 1.4, marginBottom: '0.5rem' }}>{f.feature_name}</div>
+                      <div className="kanban-card-title" style={{ fontSize: '12px', color: 'var(--ink-dim)', lineHeight: 1.4, marginBottom: '0.5rem' }}>{f.feature_name}</div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: '11px', color: 'var(--green)', fontFamily: '"DM Mono", monospace' }}>
                           {fmt(getARR(f))}

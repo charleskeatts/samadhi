@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
@@ -16,7 +16,29 @@ const NAV = [
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const pathname = usePathname();
+
+  // Detect mobile on mount + resize
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth <= 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  // Close sidebar on route change
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  // Prevent body scroll when sidebar is open on mobile
+  useEffect(() => {
+    if (isMobile) {
+      document.body.style.overflow = open ? 'hidden' : '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [open, isMobile]);
 
   const handleSignOut = async () => {
     const supabase = createClient();
@@ -24,21 +46,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     window.location.href = '/login';
   };
 
-  const closeMenu = () => setOpen(false);
-
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg)' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg)', position: 'relative' }}>
 
-      {/* ── SIDEBAR OVERLAY (mobile) ── */}
-      <div
-        className="sidebar-overlay"
-        style={{ display: open ? 'block' : 'none' }}
-        onClick={closeMenu}
-      />
+      {/* ── SIDEBAR OVERLAY (mobile only, state-driven) ── */}
+      {isMobile && open && (
+        <div
+          onClick={() => setOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.55)',
+            zIndex: 39,
+          }}
+        />
+      )}
 
       {/* ── SIDEBAR ── */}
       <aside
-        className={`dashboard-sidebar${open ? ' open' : ''}`}
         style={{
           width: 220,
           minWidth: 220,
@@ -47,12 +72,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           display: 'flex',
           flexDirection: 'column',
           flexShrink: 0,
-          position: 'sticky',
-          top: 0,
-          height: '100vh',
+          // Desktop: sticky in normal flow
+          // Mobile: fixed, slides in/out via transform
+          ...(isMobile ? {
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            height: '100vh',
+            zIndex: 40,
+            transform: open ? 'translateX(0)' : 'translateX(-100%)',
+            transition: 'transform 0.25s ease',
+          } : {
+            position: 'sticky',
+            top: 0,
+            height: '100vh',
+          }),
         }}
       >
-
         {/* Logo */}
         <div style={{
           padding: '1.8rem 1.4rem 1.4rem',
@@ -87,7 +123,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Link
                 key={item.href}
                 href={item.href}
-                onClick={closeMenu}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -161,36 +196,69 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
 
-      {/* ── MOBILE HEADER ── */}
-      <div
-        className="mobile-hdr"
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 50,
-          background: '#081428',
-          borderBottom: '1px solid var(--border)',
-          padding: '0.9rem 1.2rem',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
-        <span style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: '1.3rem', fontWeight: 300, letterSpacing: '0.22em', color: 'var(--ink)' }}>
-          CL<span className="logo-ai">AI</span>RIO
-        </span>
-        <button
-          onClick={() => setOpen(!open)}
-          style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--ink-muted)', padding: '0.3rem 0.6rem', cursor: 'pointer', fontSize: '11px' }}
+      {/* ── MOBILE HEADER (state-driven visibility) ── */}
+      {isMobile && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 50,
+            background: '#081428',
+            borderBottom: '1px solid var(--border)',
+            padding: '0 1.2rem',
+            height: 56,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
         >
-          {open ? '✕' : '☰'}
-        </button>
-      </div>
+          <span style={{
+            fontFamily: '"Cormorant Garamond", serif',
+            fontSize: '1.3rem',
+            fontWeight: 300,
+            letterSpacing: '0.22em',
+            color: 'var(--ink)',
+          }}>
+            CL<span className="logo-ai">AI</span>RIO
+          </span>
+          <button
+            onClick={() => setOpen((v) => !v)}
+            style={{
+              background: 'none',
+              border: '1px solid var(--border)',
+              color: 'var(--ink-muted)',
+              padding: '0.3rem 0.65rem',
+              cursor: 'pointer',
+              fontSize: '14px',
+              lineHeight: 1,
+              minWidth: 38,
+              minHeight: 38,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            aria-label={open ? 'Close menu' : 'Open menu'}
+          >
+            {open ? '✕' : '☰'}
+          </button>
+        </div>
+      )}
 
       {/* ── MAIN ── */}
-      <main className="dashboard-main" style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-        <div style={{ flex: 1, padding: '2.5rem 2.5rem 3rem' }}>
+      <main
+        className="dashboard-main"
+        style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          minWidth: 0,
+          // On mobile, push content below the fixed header
+          ...(isMobile ? { paddingTop: 56 } : {}),
+        }}
+      >
+        <div style={{ flex: 1, padding: isMobile ? '1.5rem 1rem 2rem' : '2.5rem 2.5rem 3rem' }}>
           {children}
         </div>
         <footer style={{
@@ -198,6 +266,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           borderTop: '1px solid var(--border)',
           display: 'flex',
           justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '0.5rem',
           fontSize: '9px',
           letterSpacing: '0.12em',
           color: 'var(--ink-muted)',
