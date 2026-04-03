@@ -247,6 +247,9 @@ a:hover { color: var(--gold); }
   /* KPI grid: 2 cols on mobile */
   .kpi-grid { grid-template-columns: repeat(2, 1fr) !important; }
 
+  /* Overview two-column grid: stack on mobile */
+  .overview-grid { grid-template-columns: 1fr !important; }
+
   /* Insights: stack list above detail */
   .insights-grid { grid-template-columns: 1fr !important; }
 

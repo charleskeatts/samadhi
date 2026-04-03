@@ -121,7 +121,7 @@ export default async function DashboardPage() {
       />
 
       {/* Two-column layout */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+      <div className="overview-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
         {/* Recent feature requests */}
         <div className="card" style={{ padding: '1.4rem 1.6rem' }}>
           <div style={{
