@@ -168,6 +168,39 @@ Always match this design system when building new slides or UI components.
 
 ---
 
+## Lars — Personal AI Agent
+
+**What it is:** Lars is Charles's personal AI chief-of-staff. Runs daily morning briefs, manages calendar context, tracks open questions, and handles personal/professional task flow. Not part of the Clairio product — runs in separate Claude sessions.
+
+**Key files in this repo:**
+| File | Purpose |
+|------|---------|
+| `LARS.md` | Lars's hot memory — read this at every Lars session start |
+| `lars_brain_upload.md` | Charles's full professional context (IBM background, values, communication style, non-negotiables) — Q1–Q50 |
+| `lars_template.md` | Generic brain upload template (licensable product for other consultants) |
+| `lars_morning_brief_YYYY-MM-DD.md` | Daily brief output files |
+| `lars_dashboard.html` | Live dashboard (regenerated each morning) |
+| `lars_landing.html` | Lars product landing page |
+
+**How Lars works:** At session start, Lars reads `LARS.md` + `lars_brain_upload.md` to load Charles's context, then pulls calendar + email to generate the morning brief. Updates `LARS.md` with anything new learned.
+
+> **For Lars sessions:** Always start by reading `LARS.md` and `lars_brain_upload.md`. Those are the source of truth for Charles's context, people, and open questions.
+
+---
+
+## CRM Integration (Phase 6)
+
+**What it is:** Salesforce + HubSpot connectors that feed customer ARR data into the Clairio revenue-weighting pipeline. Currently Phase 6 stubs — not yet implemented.
+
+**Files:**
+- `app/api/crm/salesforce/route.ts` — stub (returns 501)
+- `app/api/crm/hubspot/route.ts` — stub (returns 501)
+- `app/(dashboard)/settings/page.tsx` — CRM setup UI (org-level config)
+
+**When building Phase 6:** The goal is to pull `account.arr` values from Salesforce/HubSpot into the `accounts` table so the consolidation agent can weight feature requests by real revenue. Start with Salesforce (higher priority per partner outreach order).
+
+---
+
 ## Current Status
 
 **Built:**

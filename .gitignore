@@ -32,3 +32,18 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Lars personal agent files (local only — contains personal context)
+LARS.md
+lars_brain_upload.md
+lars_template.md
+lars_morning_brief_*.md
+lars_dashboard.html
+lars_landing.html
+
+# Other personal/sensitive files
+Clairio_Sales_Brain_v1.md
+Clairio_Strategic_Plan_v2.9.docx
+new.env.txt
+files.zip
+.claude/
