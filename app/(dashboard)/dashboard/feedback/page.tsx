@@ -374,7 +374,7 @@ export default function FeedbackPage() {
                       )}
                     </td>
                     <td>
-                      <span className="chip" style={{ fontSize: '8px', color: 'var(--accent)', borderColor: 'rgba(56,189,248,0.35)' }}>
+                      <span className="chip" style={{ fontSize: '8px', color: 'var(--accent)', borderColor: 'rgba(124, 58, 237,0.35)' }}>
                         {item.category}
                       </span>
                     </td>

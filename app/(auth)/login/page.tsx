@@ -114,9 +114,9 @@ export default function LoginPage() {
                       letterSpacing: '0.14em',
                       textTransform: 'uppercase',
                       cursor: 'pointer',
-                      background: mode === m ? 'rgba(56,189,248,0.08)' : 'transparent',
+                      background: mode === m ? 'rgba(124, 58, 237,0.08)' : 'transparent',
                       color: mode === m ? 'var(--gold)' : 'var(--ink-muted)',
-                      border: mode === m ? '1px solid rgba(56,189,248,0.3)' : '1px solid var(--border)',
+                      border: mode === m ? '1px solid rgba(124, 58, 237,0.3)' : '1px solid var(--border)',
                       fontFamily: '"DM Mono", monospace',
                     }}
                   >

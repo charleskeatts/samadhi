@@ -30,9 +30,9 @@ const STAGE_DISPLAY: Record<string, string> = {
   'Negotiation': 'Negotiation',
 };
 const STAGE_COLOR: Record<string, string> = {
-  'Prospect':    '#38bdf8',
-  'Qualified':   'var(--green)',
-  'Negotiation': 'var(--orange)',
+  'Prospect':    '#7c3aed',
+  'Qualified':   '#15803d',
+  'Negotiation': '#c2410c',
 };
 
 const KANBAN_STAGES = ['Prospect', 'Qualified', 'Negotiation'];
@@ -183,9 +183,9 @@ export default function BacklogPage() {
                 letterSpacing: '0.12em',
                 textTransform: 'uppercase',
                 cursor: 'pointer',
-                background: filterCategory === cat ? 'rgba(56,189,248,0.08)' : 'transparent',
+                background: filterCategory === cat ? 'rgba(124, 58, 237,0.08)' : 'transparent',
                 color: filterCategory === cat ? 'var(--accent)' : 'var(--ink-muted)',
-                border: filterCategory === cat ? '1px solid rgba(56,189,248,0.3)' : '1px solid var(--border)',
+                border: filterCategory === cat ? '1px solid rgba(124, 58, 237,0.3)' : '1px solid var(--border)',
                 transition: 'all 0.15s',
                 fontFamily: '"DM Mono", monospace',
               }}
@@ -206,9 +206,9 @@ export default function BacklogPage() {
                 letterSpacing: '0.12em',
                 textTransform: 'uppercase',
                 cursor: 'pointer',
-                background: sortBy === key ? 'rgba(56,189,248,0.08)' : 'transparent',
+                background: sortBy === key ? 'rgba(124, 58, 237,0.08)' : 'transparent',
                 color: sortBy === key ? 'var(--accent)' : 'var(--ink-muted)',
-                border: sortBy === key ? '1px solid rgba(56,189,248,0.3)' : '1px solid var(--border)',
+                border: sortBy === key ? '1px solid rgba(124, 58, 237,0.3)' : '1px solid var(--border)',
                 fontFamily: '"DM Mono", monospace',
               }}
             >
@@ -263,11 +263,11 @@ export default function BacklogPage() {
                     gap: '0.75rem',
                     alignItems: 'center',
                     minHeight: 52,
-                    background: isSelected ? 'rgba(56,189,248,0.04)' : 'transparent',
+                    background: isSelected ? 'rgba(124, 58, 237,0.04)' : 'transparent',
                     transition: 'background 0.15s',
                   }}
-                  onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = 'rgba(56,189,248,0.03)'; }}
-                  onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = isSelected ? 'rgba(56,189,248,0.04)' : 'transparent'; }}
+                  onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = 'rgba(124, 58, 237,0.03)'; }}
+                  onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = isSelected ? 'rgba(124, 58, 237,0.04)' : 'transparent'; }}
                 >
                   {/* Rank */}
                   <div style={{
@@ -321,8 +321,8 @@ export default function BacklogPage() {
                 {isSelected && (
                   <div style={{
                     margin: '0 1.1rem 1rem',
-                    background: 'rgba(56,189,248,0.03)',
-                    border: '1px solid rgba(56,189,248,0.12)',
+                    background: 'rgba(124, 58, 237,0.03)',
+                    border: '1px solid rgba(124, 58, 237,0.12)',
                     padding: '1.2rem 1.4rem',
                     display: 'grid',
                     gridTemplateColumns: '1fr 1fr 1fr',

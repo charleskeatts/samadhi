@@ -81,14 +81,14 @@ export default function InsightsPage() {
                     textAlign: 'left',
                     padding: '0.85rem 1rem',
                     borderBottom: '1px solid var(--border)',
-                    background: selectedFeature?.id === feature.id ? 'rgba(56,189,248,0.06)' : 'transparent',
+                    background: selectedFeature?.id === feature.id ? 'rgba(124, 58, 237,0.06)' : 'transparent',
                     borderLeft: selectedFeature?.id === feature.id ? '2px solid var(--accent)' : '2px solid transparent',
                     cursor: 'pointer',
                     transition: 'all 0.15s',
                   }}
                   onMouseEnter={(e) => {
                     if (selectedFeature?.id !== feature.id) {
-                      (e.currentTarget as HTMLElement).style.background = 'rgba(56,189,248,0.03)';
+                      (e.currentTarget as HTMLElement).style.background = 'rgba(124, 58, 237,0.03)';
                     }
                   }}
                   onMouseLeave={(e) => {
@@ -149,7 +149,7 @@ export default function InsightsPage() {
                     {selectedFeature.deal_stage ?? 'Prospect'}
                   </span>
                   {selectedFeature.category && (
-                    <span className="chip" style={{ color: 'var(--accent)', borderColor: 'rgba(56,189,248,0.35)' }}>
+                    <span className="chip" style={{ color: 'var(--accent)', borderColor: 'rgba(124, 58, 237,0.35)' }}>
                       {selectedFeature.category}
                     </span>
                   )}

@@ -15,7 +15,7 @@ type DealStage = 'Prospect' | 'Qualified' | 'Negotiation';
 const STAGES: DealStage[] = ['Prospect', 'Qualified', 'Negotiation'];
 
 const STAGE_META: Record<DealStage, { label: string; color: string; description: string }> = {
-  'Prospect':    { label: 'Prospect',    color: '#38bdf8', description: 'Early-stage interest' },
+  'Prospect':    { label: 'Prospect',    color: '#7c3aed', description: 'Early-stage interest' },
   'Qualified':   { label: 'Qualified',   color: 'var(--green)', description: 'Validated need' },
   'Negotiation': { label: 'Negotiation', color: 'var(--orange)', description: 'Active deal' },
 };

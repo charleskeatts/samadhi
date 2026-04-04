@@ -67,8 +67,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         style={{
           width: 220,
           minWidth: 220,
-          background: '#081428',
-          borderRight: '1px solid var(--border)',
+          background: 'var(--sidebar-bg)',
+          borderRight: '1px solid rgba(0,0,0,0.12)',
           display: 'flex',
           flexDirection: 'column',
           flexShrink: 0,
@@ -92,7 +92,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Logo */}
         <div style={{
           padding: '1.8rem 1.4rem 1.4rem',
-          borderBottom: '1px solid var(--border)',
+          borderBottom: '1px solid rgba(240,235,225,0.1)',
         }}>
           <div style={{
             fontFamily: '"Cormorant Garamond", serif',
@@ -132,20 +132,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   letterSpacing: '0.16em',
                   textTransform: 'uppercase',
                   color: active ? 'var(--gold)' : 'var(--ink-muted)',
-                  background: active ? 'rgba(56,189,248,0.08)' : 'transparent',
+                  background: active ? 'rgba(124, 58, 237,0.08)' : 'transparent',
                   borderLeft: active ? '2px solid var(--gold)' : '2px solid transparent',
                   transition: 'all 0.15s',
                   textDecoration: 'none',
                 }}
                 onMouseEnter={(e) => {
                   if (!active) {
-                    (e.currentTarget as HTMLElement).style.color = 'var(--ink-dim)';
-                    (e.currentTarget as HTMLElement).style.background = 'rgba(56,189,248,0.05)';
+                    (e.currentTarget as HTMLElement).style.color = 'rgba(240,235,225,0.75)';
+                    (e.currentTarget as HTMLElement).style.background = 'rgba(240,235,225,0.06)';
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (!active) {
-                    (e.currentTarget as HTMLElement).style.color = 'var(--ink-muted)';
+                    (e.currentTarget as HTMLElement).style.color = 'rgba(240,235,225,0.45)';
                     (e.currentTarget as HTMLElement).style.background = 'transparent';
                   }
                 }}
@@ -166,14 +166,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </nav>
 
         {/* Sign out */}
-        <div style={{ padding: '0.9rem 0.75rem', borderTop: '1px solid var(--border)' }}>
+        <div style={{ padding: '0.9rem 0.75rem', borderTop: '1px solid rgba(240,235,225,0.1)' }}>
           <button
             onClick={handleSignOut}
             style={{
               width: '100%',
               background: 'none',
-              border: '1px solid var(--border)',
-              color: 'var(--ink-muted)',
+              border: '1px solid rgba(240,235,225,0.15)',
+              color: 'rgba(240,235,225,0.35)',
               fontFamily: '"DM Mono", monospace',
               fontSize: '9px',
               letterSpacing: '0.18em',
@@ -183,12 +183,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               transition: 'all 0.2s',
             }}
             onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.borderColor = 'var(--orange-dim)';
-              (e.currentTarget as HTMLElement).style.color = 'var(--orange)';
+              (e.currentTarget as HTMLElement).style.borderColor = 'rgba(240,235,225,0.4)';
+              (e.currentTarget as HTMLElement).style.color = 'rgba(240,235,225,0.75)';
             }}
             onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)';
-              (e.currentTarget as HTMLElement).style.color = 'var(--ink-muted)';
+              (e.currentTarget as HTMLElement).style.borderColor = 'rgba(240,235,225,0.15)';
+              (e.currentTarget as HTMLElement).style.color = 'rgba(240,235,225,0.35)';
             }}
           >
             Sign Out
@@ -205,8 +205,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             left: 0,
             right: 0,
             zIndex: 50,
-            background: '#081428',
-            borderBottom: '1px solid var(--border)',
+            background: 'var(--sidebar-bg)',
+            borderBottom: '1px solid rgba(240,235,225,0.1)',
             padding: '0 1.2rem',
             height: 56,
             display: 'flex',
@@ -219,7 +219,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             fontSize: '1.3rem',
             fontWeight: 300,
             letterSpacing: '0.22em',
-            color: 'var(--ink)',
+            color: '#f0ebe1',
           }}>
             CL<span className="logo-ai">AI</span>RIO
           </span>
@@ -227,8 +227,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             onClick={() => setOpen((v) => !v)}
             style={{
               background: 'none',
-              border: '1px solid var(--border)',
-              color: 'var(--ink-muted)',
+              border: '1px solid rgba(240,235,225,0.2)',
+              color: 'rgba(240,235,225,0.5)',
               padding: '0.3rem 0.65rem',
               cursor: 'pointer',
               fontSize: '14px',
