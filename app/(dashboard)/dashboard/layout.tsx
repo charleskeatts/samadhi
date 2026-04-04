@@ -258,7 +258,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           color: 'var(--ink-muted)',
         }}>
           <span>Clairio · Revenue-Weighted Product Intelligence</span>
-          <span style={{ fontFamily: '"Cormorant Garamond", serif', fontStyle: 'italic' }}>Samadi Consulting LLC</span>
+          <span style={{ display: 'flex', gap: '1.25rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            <span style={{ fontFamily: '"Cormorant Garamond", serif', fontStyle: 'italic' }}>Samadi Consulting LLC</span>
+            <a href="https://www.samadhiagents.com" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--ink-muted)', textDecoration: 'none', letterSpacing: '0.06em' }}>samadhiagents.com</a>
+            <a href="mailto:info@samadhiagents.com" style={{ color: 'var(--ink-muted)', textDecoration: 'none', letterSpacing: '0.06em' }}>info@samadhiagents.com</a>
+          </span>
         </footer>
       </main>
     </div>
