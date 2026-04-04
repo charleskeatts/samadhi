@@ -19,7 +19,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isMobile, setIsMobile] = useState(false);
   const pathname = usePathname();
 
-  // Detect mobile on mount + resize
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth <= 768);
     check();
@@ -27,16 +26,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  // Close sidebar on route change
-  useEffect(() => {
-    setOpen(false);
-  }, [pathname]);
+  useEffect(() => { setOpen(false); }, [pathname]);
 
-  // Prevent body scroll when sidebar is open on mobile
   useEffect(() => {
-    if (isMobile) {
-      document.body.style.overflow = open ? 'hidden' : '';
-    }
+    if (isMobile) document.body.style.overflow = open ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [open, isMobile]);
 
@@ -49,16 +42,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg)', position: 'relative' }}>
 
-      {/* ── SIDEBAR OVERLAY (mobile only, state-driven) ── */}
+      {/* ── OVERLAY (mobile) ── */}
       {isMobile && open && (
         <div
           onClick={() => setOpen(false)}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.55)',
-            zIndex: 39,
-          }}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(28,18,8,0.35)', zIndex: 39 }}
         />
       )}
 
@@ -67,13 +55,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         style={{
           width: 220,
           minWidth: 220,
-          background: 'var(--sidebar-bg)',
-          borderRight: '1px solid rgba(0,0,0,0.12)',
+          background: 'var(--bg-card)',
+          borderRight: '1px solid var(--border)',
           display: 'flex',
           flexDirection: 'column',
           flexShrink: 0,
-          // Desktop: sticky in normal flow
-          // Mobile: fixed, slides in/out via transform
           ...(isMobile ? {
             position: 'fixed',
             top: 0,
@@ -92,7 +78,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Logo */}
         <div style={{
           padding: '1.8rem 1.4rem 1.4rem',
-          borderBottom: '1px solid rgba(240,235,225,0.1)',
+          borderBottom: '1px solid var(--border)',
         }}>
           <div style={{
             fontFamily: '"Cormorant Garamond", serif',
@@ -131,21 +117,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   fontSize: '10px',
                   letterSpacing: '0.16em',
                   textTransform: 'uppercase',
-                  color: active ? 'var(--gold)' : 'var(--ink-muted)',
-                  background: active ? 'rgba(124, 58, 237,0.08)' : 'transparent',
-                  borderLeft: active ? '2px solid var(--gold)' : '2px solid transparent',
+                  color: active ? 'var(--accent)' : 'var(--ink-muted)',
+                  background: active ? 'var(--accent-glow)' : 'transparent',
+                  borderLeft: active ? '2px solid var(--accent)' : '2px solid transparent',
                   transition: 'all 0.15s',
                   textDecoration: 'none',
                 }}
                 onMouseEnter={(e) => {
                   if (!active) {
-                    (e.currentTarget as HTMLElement).style.color = 'rgba(240,235,225,0.75)';
-                    (e.currentTarget as HTMLElement).style.background = 'rgba(240,235,225,0.06)';
+                    (e.currentTarget as HTMLElement).style.color = 'var(--ink-dim)';
+                    (e.currentTarget as HTMLElement).style.background = 'rgba(124,58,237,0.04)';
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (!active) {
-                    (e.currentTarget as HTMLElement).style.color = 'rgba(240,235,225,0.45)';
+                    (e.currentTarget as HTMLElement).style.color = 'var(--ink-muted)';
                     (e.currentTarget as HTMLElement).style.background = 'transparent';
                   }
                 }}
@@ -154,7 +140,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   fontFamily: '"Cormorant Garamond", serif',
                   fontSize: '11px',
                   fontStyle: 'italic',
-                  color: active ? 'var(--gold-dim)' : 'var(--border-bright)',
+                  color: active ? 'var(--accent-dim)' : 'var(--border-bright)',
                   minWidth: '1.4rem',
                 }}>
                   {item.abbr}
@@ -166,14 +152,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </nav>
 
         {/* Sign out */}
-        <div style={{ padding: '0.9rem 0.75rem', borderTop: '1px solid rgba(240,235,225,0.1)' }}>
+        <div style={{ padding: '0.9rem 0.75rem', borderTop: '1px solid var(--border)' }}>
           <button
             onClick={handleSignOut}
             style={{
               width: '100%',
               background: 'none',
-              border: '1px solid rgba(240,235,225,0.15)',
-              color: 'rgba(240,235,225,0.35)',
+              border: '1px solid var(--border)',
+              color: 'var(--ink-muted)',
               fontFamily: '"DM Mono", monospace',
               fontSize: '9px',
               letterSpacing: '0.18em',
@@ -183,12 +169,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               transition: 'all 0.2s',
             }}
             onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.borderColor = 'rgba(240,235,225,0.4)';
-              (e.currentTarget as HTMLElement).style.color = 'rgba(240,235,225,0.75)';
+              (e.currentTarget as HTMLElement).style.borderColor = 'var(--red)';
+              (e.currentTarget as HTMLElement).style.color = 'var(--red)';
             }}
             onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.borderColor = 'rgba(240,235,225,0.15)';
-              (e.currentTarget as HTMLElement).style.color = 'rgba(240,235,225,0.35)';
+              (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)';
+              (e.currentTarget as HTMLElement).style.color = 'var(--ink-muted)';
             }}
           >
             Sign Out
@@ -196,7 +182,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
 
-      {/* ── MOBILE HEADER (state-driven visibility) ── */}
+      {/* ── MOBILE HEADER ── */}
       {isMobile && (
         <div
           style={{
@@ -205,8 +191,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             left: 0,
             right: 0,
             zIndex: 50,
-            background: 'var(--sidebar-bg)',
-            borderBottom: '1px solid rgba(240,235,225,0.1)',
+            background: 'var(--bg-card)',
+            borderBottom: '1px solid var(--border)',
             padding: '0 1.2rem',
             height: 56,
             display: 'flex',
@@ -219,7 +205,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             fontSize: '1.3rem',
             fontWeight: 300,
             letterSpacing: '0.22em',
-            color: '#f0ebe1',
+            color: 'var(--ink)',
           }}>
             CL<span className="logo-ai">AI</span>RIO
           </span>
@@ -227,8 +213,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             onClick={() => setOpen((v) => !v)}
             style={{
               background: 'none',
-              border: '1px solid rgba(240,235,225,0.2)',
-              color: 'rgba(240,235,225,0.5)',
+              border: '1px solid var(--border)',
+              color: 'var(--ink-muted)',
               padding: '0.3rem 0.65rem',
               cursor: 'pointer',
               fontSize: '14px',
@@ -254,7 +240,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           display: 'flex',
           flexDirection: 'column',
           minWidth: 0,
-          // On mobile, push content below the fixed header
           ...(isMobile ? { paddingTop: 56 } : {}),
         }}
       >
