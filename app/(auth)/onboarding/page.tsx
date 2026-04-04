@@ -141,7 +141,7 @@ export default function OnboardingPage() {
             </div>
 
             {error && (
-              <div style={{ padding: '0.6rem 0.8rem', border: '1px solid #3a1515', background: '#1a0a0a', fontSize: '10px', color: '#f87171', letterSpacing: '0.06em' }}>
+              <div style={{ padding: '0.6rem 0.8rem', border: '1px solid rgba(185,28,28,0.3)', background: 'rgba(185,28,28,0.06)', fontSize: '10px', color: 'var(--red)', letterSpacing: '0.06em' }}>
                 {error}
               </div>
             )}

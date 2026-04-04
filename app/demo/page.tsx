@@ -205,10 +205,10 @@ export default function DemoPage() {
             <div style={{
               marginTop: '1rem',
               padding: '0.6rem 0.8rem',
-              border: '1px solid #3a1515',
-              background: '#1a0a0a',
+              border: '1px solid rgba(185,28,28,0.3)',
+              background: 'rgba(185,28,28,0.06)',
               fontSize: '10px',
-              color: '#f87171',
+              color: 'var(--red)',
               letterSpacing: '0.06em',
             }}>
               {error}
